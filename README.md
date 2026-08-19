@@ -1,4 +1,18 @@
-# React + Vite
+# Glad Tidings Outreach
+
+## Supabase connection
+
+The app currently falls back to browser-local preview data until Supabase credentials are configured. To enable shared users, secure admin roles, published devotionals, and cross-device engagement:
+
+1. Create a Supabase project.
+2. Copy `.env.example` to `.env.local` and add the project URL and anon key from Supabase Project Settings > API.
+3. Run `supabase/schema.sql` in the Supabase SQL Editor.
+4. Create a user in Supabase Authentication, then promote that user with the admin SQL comment at the bottom of the schema file.
+5. Restart the Vite server.
+
+For an existing project, run `supabase/media_posts.sql` once to enable admin publishing of announcements, uploaded videos/images, and hosted media URLs on the Media page.
+
+Never place the Supabase service-role key in this frontend. Only the anon key belongs in `.env.local`; row-level security protects the data.
 
 This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 

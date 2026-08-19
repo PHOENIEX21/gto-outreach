@@ -1,4 +1,10 @@
+import { Link } from "react-router-dom";
+import { useAppData } from "../data/useAppData";
+
 function Devotional() {
+  const { devotionals } = useAppData();
+  const featured = devotionals[0];
+
   return (
     <main className="devotional-page">
       <section className="devotional-hero">
@@ -21,13 +27,13 @@ function Devotional() {
           <span>MARK 16:15</span>
         </div>
 
-        <h2>Go into all the world</h2>
+        <h2>{featured.title}</h2>
 
         <p className="scripture">
-          "Go into all the world and preach the gospel to all creation."
+          &quot;{featured.scripture}&quot;
         </p>
 
-        <span className="reference">Mark 16:15</span>
+        <span className="reference">{featured.reference}</span>
 
         <div className="devotional-divider" />
 
@@ -35,20 +41,7 @@ function Devotional() {
           <h3>Today's Reflection</h3>
 
           <p>
-            We are called to take the message of Christ beyond the walls,
-            reaching hearts and transforming lives. Every believer has a
-            part to play in sharing the good news.
-          </p>
-
-          <p>
-            The Gospel is not something we keep to ourselves. God has
-            placed us where we are so that our words, actions and lives
-            can point people toward Jesus.
-          </p>
-
-          <p>
-            Today, ask God to show you one person you can encourage,
-            pray for, or share the love of Christ with.
+            {featured.reflection}
           </p>
         </div>
 
@@ -56,9 +49,7 @@ function Devotional() {
           <span>🙏 PRAYER</span>
 
           <p>
-            Lord, give me courage to share Your love today.
-            Open my eyes to the people around me and help my life
-            point others to Jesus. Amen.
+            {featured.prayer}
           </p>
         </div>
 
@@ -72,9 +63,9 @@ function Devotional() {
       </article>
 
       <div className="devotional-actions">
-        <a href="/">← Back Home</a>
+        <Link to="/">← Back Home</Link>
 
-        <a href="/community">Share With Community →</a>
+        <Link to="/community">Share With Community →</Link>
       </div>
     </main>
   );

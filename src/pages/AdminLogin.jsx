@@ -1,0 +1,42 @@
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAppData } from "../data/useAppData";
+
+function AdminLogin() {
+  const navigate = useNavigate();
+  const { admin, signInAdmin } = useAppData();
+  const [form, setForm] = useState({ email: "", password: "" });
+  const [error, setError] = useState("");
+
+  if (admin) {
+    navigate("/admin", { replace: true });
+    return null;
+  }
+
+  const submit = async (event) => {
+    event.preventDefault();
+    const result = await signInAdmin(form.email, form.password);
+    if (result?.success) navigate("/admin");
+    else setError(result?.error || "That admin sign-in did not match. Check the credentials and try again.");
+  };
+
+  return (
+    <main className="join-page admin-login-page">
+      <section className="join-intro">
+        <p className="eyebrow">GTO STEWARDSHIP</p>
+        <h1>Lead the <span>message.</span></h1>
+        <p>Admin access is reserved for the people entrusted to publish and steward GTO content.</p>
+      </section>
+      <form className="join-form" onSubmit={submit}>
+        <div className="form-heading"><span>ADMIN</span><h2>Sign in to continue.</h2><p>Use your secure GTO staff account to publish and steward community content.</p></div>
+        <label>Email<input type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} placeholder="admin@gtooutreach.org" required /></label>
+        <label>Password<input type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} placeholder="Enter admin password" required /></label>
+        <button type="submit" className="member-primary">Open admin dashboard <span aria-hidden="true">→</span></button>
+        {error && <p className="admin-error">{error}</p>}
+        <Link to="/" className="admin-back-link">Back to GTO home</Link>
+      </form>
+    </main>
+  );
+}
+
+export default AdminLogin;

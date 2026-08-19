@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 function Community() {
   return (
     <main className="community-page">
@@ -17,7 +19,7 @@ function Community() {
       </section>
 
       <section className="community-grid">
-        <div className="community-card">
+        <div className="community-card" id="prayer">
           <span className="community-icon">🙏</span>
 
           <h2>Pray Together</h2>
@@ -27,10 +29,10 @@ function Community() {
             and stand together in faith.
           </p>
 
-          <a href="#prayer">Prayer Community →</a>
+          <a href="mailto:hello@gtooutreach.org?subject=Prayer%20request">Send a prayer request →</a>
         </div>
 
-        <div className="community-card featured">
+        <div className="community-card featured" id="grow">
           <span className="community-icon">🤝</span>
 
           <h2>Grow Together</h2>
@@ -40,10 +42,10 @@ function Community() {
             and encourage one another in your walk with Christ.
           </p>
 
-          <a href="#grow">Join the Conversation →</a>
+          <a href="/join">Join the conversation →</a>
         </div>
 
-        <div className="community-card">
+        <div className="community-card" id="mission">
           <span className="community-icon">🌍</span>
 
           <h2>Reach Together</h2>
@@ -53,7 +55,7 @@ function Community() {
             beyond the walls and into our communities.
           </p>
 
-          <a href="#mission">Our Mission →</a>
+          <a href="/announcements">See GTO updates →</a>
         </div>
       </section>
 
@@ -87,9 +89,7 @@ function Community() {
           </p>
         </div>
 
-        <a href="mailto:hello@gtooutreach.org">
-          Connect With Us →
-        </a>
+        <Link to="/community-wall">Prayer & testimony wall →</Link>
       </section>
     </main>
   );

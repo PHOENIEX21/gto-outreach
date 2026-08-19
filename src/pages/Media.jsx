@@ -1,5 +1,66 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { useAppData } from "../data/useAppData";
+
+export function MediaPost({ post, member, addMediaComment, toggleMediaLike }) {
+  const [comment, setComment] = useState("");
+  const [shareLabel, setShareLabel] = useState("Share");
+  const [likeError, setLikeError] = useState("");
+  const comments = post.comments || [];
+
+  const sharePost = async () => {
+    const postUrl = `${window.location.origin}${window.location.pathname}#media-${post.id}`;
+    const shareData = { title: post.title, text: post.body, url: postUrl };
+    if (navigator.share) await navigator.share(shareData);
+    else if (navigator.clipboard) {
+      await navigator.clipboard.writeText(postUrl);
+      setShareLabel("Copied");
+      window.setTimeout(() => setShareLabel("Share"), 1800);
+    }
+  };
+
+  const submitComment = async (event) => {
+    event.preventDefault();
+    if (!member || !comment.trim()) return;
+    await addMediaComment(post.id, comment);
+    setComment("");
+  };
+
+  const handleLike = async () => {
+    setLikeError("");
+    const result = await toggleMediaLike(post.id);
+    if (result?.error) setLikeError(result.error);
+  };
+
+  return (
+    <article className="media-post" id={`media-${post.id}`}>
+      <div className="media-post-media">
+        {post.kind === "video" && <video controls preload="metadata" src={post.mediaUrl} />}
+        {post.kind === "image" && <img src={post.mediaUrl} alt={post.title} />}
+        {post.kind === "announcement" && <span className="media-post-mark">✦</span>}
+      </div>
+      <div className="media-post-copy">
+        <span className="media-card-label">{post.kind}</span>
+        <h3>{post.title}</h3>
+        <p>{post.body}</p>
+        <small>{new Date(post.publishedAt).toLocaleDateString()}</small>
+        <button type="button" className={post.likedByMember ? "media-like-button active" : "media-like-button"} onClick={handleLike}>{member ? `${post.likedByMember ? "♥ Saved" : "♡ Like"} · ${post.likes || 0}` : "Join GTO to like"}</button>
+        {likeError && <small className="media-action-error">{likeError}</small>}
+        <button type="button" className="media-share-button" onClick={sharePost}>{shareLabel} <span aria-hidden="true">↗</span></button>
+        <div className="media-post-comments">
+          {comments.length > 0 && <div className="media-comment-list">{comments.slice(0, 3).map((item) => <p key={item.id}><strong>{item.author}</strong>{item.text}</p>)}</div>}
+          {member ? <form onSubmit={submitComment}><input value={comment} onChange={(event) => setComment(event.target.value)} placeholder="Say something encouraging..." aria-label={`Comment on ${post.title}`} /><button type="submit" className="media-comment-button">Post</button></form> : <p className="media-sign-in-prompt"><Link to="/join">Join GTO</Link> to comment on this post.</p>}
+        </div>
+      </div>
+    </article>
+  );
+}
+
 function Media() {
+  const { mediaPosts, member, addMediaComment, toggleMediaLike, mediaUpdateNotice, clearMediaUpdateNotice, backendLoading } = useAppData();
+  const [query, setQuery] = useState("");
+  const [kind, setKind] = useState("all");
+  const visiblePosts = mediaPosts.filter((post) => (kind === "all" || post.kind === kind) && `${post.title} ${post.body}`.toLowerCase().includes(query.toLowerCase().trim()));
   useEffect(() => {
     const script = document.createElement("script");
     script.src = "https://www.tiktok.com/embed.js";
@@ -25,6 +86,8 @@ function Media() {
           to strengthen your faith and help you grow in Christ.
         </p>
       </section>
+
+      {backendLoading && <p className="content-loading" role="status">Loading the latest from GTO...</p>}
 
       <section className="media-feature">
         <div className="media-feature-content">
@@ -106,6 +169,69 @@ function Media() {
           <a href="#resources">View Resources →</a>
         </div>
       </section>
+
+      {mediaUpdateNotice && <button type="button" className="media-update-notice" onClick={clearMediaUpdateNotice}>{mediaUpdateNotice} <span aria-hidden="true">×</span></button>}
+      {mediaPosts.length > 0 && <section className="media-posts"><div className="media-posts-heading"><p className="eyebrow">LATEST FROM GTO</p><h2>Stay connected.</h2><div className="media-filters"><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search GTO media" aria-label="Search GTO media" /><select value={kind} onChange={(event) => setKind(event.target.value)} aria-label="Filter media by type"><option value="all">All posts</option><option value="announcement">Announcements</option><option value="video">Videos</option><option value="image">Images</option></select></div></div><div className="media-post-grid">{visiblePosts.length > 0 ? visiblePosts.map((post) => <MediaPost key={post.id} post={post} member={member} addMediaComment={addMediaComment} toggleMediaLike={toggleMediaLike} />) : <p className="media-filter-empty">No posts match that search.</p>}</div></section>}
+
+<section id="messages" className="media-content-section">
+  <p className="media-card-label">MESSAGES</p>
+
+  <h2>Gospel Messages</h2>
+
+    <p>
+    Watch teachings that strengthen your faith and help you live boldly for Christ.
+  </p>
+
+  <div className="media-message-placeholder">
+    <span>🎥</span>
+
+    <h3>Gospel Messages Coming Soon</h3>
+
+    <p>
+      Powerful teachings, sermons, and messages will be added here.
+    </p>
+  </div>
+</section>
+
+<section id="worship" className="media-content-section">
+  <p className="media-card-label">WORSHIP</p>
+
+  <h2>Worship & Praise</h2>
+
+  <p>
+    Lift your heart through worship and create moments of deeper connection with God.
+  </p>
+
+  <div className="media-message-placeholder">
+    <span>🎵</span>
+
+    <h3>Worship Content Coming Soon</h3>
+
+    <p>
+      Worship sessions, praise moments, and inspiring songs will be added here.
+    </p>
+  </div>
+</section>
+
+<section id="resources" className="media-content-section">
+  <p className="media-card-label">RESOURCES</p>
+
+  <h2>Gospel Resources</h2>
+
+  <p>
+    Discover helpful resources for your spiritual growth and everyday walk with Christ.
+  </p>
+
+  <div className="media-message-placeholder">
+    <span>📖</span>
+
+    <h3>Gospel Resources Coming Soon</h3>
+
+    <p>
+      Bible study materials, devotionals, and helpful resources will be added here.
+    </p>
+  </div>
+</section>
 
       <section className="media-cta">
         <p className="eyebrow">KEEP GROWING</p>
