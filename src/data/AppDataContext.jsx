@@ -57,16 +57,28 @@ function useStoredState(key, fallback) {
   return [value, update];
 }
 
-function summarizeActivity(activity = {}, mediaActivity = {}) {
+function summarizeActivity(activity = {}, mediaActivity = {}, communityActivity = {}) {
   const completed = activity.completed || [];
   const liked = activity.liked || [];
   const comments = activity.comments || [];
   const mediaLiked = mediaActivity.liked || 0;
   const mediaComments = mediaActivity.comments || 0;
-  const points = completed.length * 10 + liked.length * 3 + comments.length * 5 + mediaLiked * 3 + mediaComments * 5;
+  const communityPosts = communityActivity.posts || 0;
+  const communitySupport = communityActivity.support || 0;
+  const points = completed.length * 10 + liked.length * 3 + comments.length * 5 + mediaLiked * 3 + mediaComments * 5 + communityPosts * 5 + communitySupport * 3;
   const grade = points >= 100 ? "A+" : points >= 70 ? "A" : points >= 40 ? "B" : points >= 15 ? "C" : points > 0 ? "D" : "-";
   const label = points >= 70 ? "Highly active" : points >= 40 ? "Active" : points > 0 ? "Growing" : "Getting started";
-  return { points, grade, label, completed: completed.length, liked: liked.length + mediaLiked, comments: comments.length + mediaComments };
+  return {
+    points,
+    grade,
+    label,
+    completed: completed.length,
+    liked: liked.length + mediaLiked,
+    comments: comments.length + mediaComments,
+    communityPosts,
+    communitySupport,
+    engagements: completed.length + liked.length + comments.length + mediaLiked + mediaComments + communityPosts + communitySupport,
+  };
 }
 
 export function AppDataProvider({ children }) {
@@ -87,7 +99,14 @@ export function AppDataProvider({ children }) {
     liked: mediaPosts.filter((post) => post.likedByMember).length,
     comments: mediaPosts.reduce((total, post) => total + (post.comments || []).filter((comment) => comment.userId === member?.id).length, 0),
   };
-  const memberActivity = summarizeActivity(memberEngagement, memberMediaActivity);
+  const memberCommunityActivity = {
+    posts: communityPosts.filter((post) => post.userId === member?.id).length,
+    support: communityPosts.filter((post) => post.supportedByMember).length,
+  };
+  const devotionalComments = Object.values(engagement)
+    .flatMap((activity) => activity.comments || [])
+    .sort((first, second) => new Date(second.createdAt) - new Date(first.createdAt));
+  const memberActivity = summarizeActivity(memberEngagement, memberMediaActivity, memberCommunityActivity);
   const memberBadges = [
     memberActivity.completed >= 1 && { icon: "✦", name: "First step", detail: "Completed a devotional" },
     memberActivity.completed >= 3 && { icon: "☼", name: "Word walker", detail: "Completed three devotionals" },
@@ -102,7 +121,11 @@ export function AppDataProvider({ children }) {
         liked: mediaPosts.reduce((total, post) => total + ((post.likedUserIds || []).includes(profile.id) ? 1 : 0), 0),
         comments: mediaPosts.reduce((total, post) => total + (post.comments || []).filter((comment) => comment.userId === profile.id).length, 0),
       };
-      return { ...profile, activity: summarizeActivity(engagement[profile.id], mediaActivity) };
+      const communityActivity = {
+        posts: communityPosts.filter((post) => post.userId === profile.id).length,
+        support: communityPosts.filter((post) => (post.supportedUserIds || []).includes(profile.id)).length,
+      };
+      return { ...profile, activity: summarizeActivity(engagement[profile.id], mediaActivity, communityActivity) };
     })
     .sort((first, second) => second.activity.points - first.activity.points);
 
@@ -186,6 +209,7 @@ export function AppDataProvider({ children }) {
         author: post.profiles?.full_name || "GTO member",
         createdAt: post.created_at,
         supportCount: (remoteCommunitySupport || []).filter((support) => support.post_id === post.id).length,
+        supportedUserIds: (remoteCommunitySupport || []).filter((support) => support.post_id === post.id).map((support) => support.user_id),
         supportedByMember: (remoteCommunitySupport || []).some((support) => support.post_id === post.id && support.user_id === member?.id),
       })));
     }
@@ -238,6 +262,8 @@ export function AppDataProvider({ children }) {
       .on("postgres_changes", { event: "*", schema: "public", table: "media_reactions" }, () => remoteActions.current.loadRemoteData())
       .on("postgres_changes", { event: "*", schema: "public", table: "community_posts" }, () => remoteActions.current.loadRemoteData())
       .on("postgres_changes", { event: "*", schema: "public", table: "community_support" }, () => remoteActions.current.loadRemoteData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "devotional_engagement" }, () => remoteActions.current.loadRemoteData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "devotional_comments" }, () => remoteActions.current.loadRemoteData())
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
@@ -497,7 +523,7 @@ export function AppDataProvider({ children }) {
       await loadRemoteData();
       return;
     }
-    setCommunityPosts((current) => [{ ...post, id: `community-${Date.now()}`, userId: member.id, author: member.name, createdAt: new Date().toISOString() }, ...current]);
+    setCommunityPosts((current) => [{ ...post, id: `community-${Date.now()}`, userId: member.id, author: member.name, createdAt: new Date().toISOString(), supportedUserIds: [] }, ...current]);
   };
 
   const deleteCommunityPost = async (postId) => {
@@ -521,7 +547,12 @@ export function AppDataProvider({ children }) {
       await loadRemoteData();
       return;
     }
-    setCommunityPosts((current) => current.map((item) => item.id === postId ? { ...item, supportCount: Math.max(0, (item.supportCount || 0) + (nextSupported ? 1 : -1)), supportedByMember: nextSupported } : item));
+    setCommunityPosts((current) => current.map((item) => item.id === postId ? {
+      ...item,
+      supportCount: Math.max(0, (item.supportCount || 0) + (nextSupported ? 1 : -1)),
+      supportedByMember: nextSupported,
+      supportedUserIds: nextSupported ? [...(item.supportedUserIds || []), member.id] : (item.supportedUserIds || []).filter((id) => id !== member.id),
+    } : item));
   };
 
   const value = {
@@ -532,6 +563,7 @@ export function AppDataProvider({ children }) {
     mediaPosts,
     communityPosts,
     engagement: memberEngagement,
+    devotionalComments,
     memberActivity,
     memberBadges,
     activityLeaderboard,

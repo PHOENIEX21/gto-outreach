@@ -10,6 +10,8 @@ The app currently falls back to browser-local preview data until Supabase creden
 4. Create a user in Supabase Authentication, then promote that user with the admin SQL comment at the bottom of the schema file.
 5. Restart the Vite server.
 
+For an existing project, run `supabase/realtime_devotionals.sql` once in the Supabase SQL Editor so devotional likes, completions, and encouragements update live for everyone.
+
 ## Password-recovery email delivery
 
 The reset form requests an email from Supabase Auth. A successful request only means

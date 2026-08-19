@@ -158,6 +158,16 @@ do $$ begin
 exception when duplicate_object then null;
 end $$;
 
+do $$ begin
+  alter publication supabase_realtime add table public.devotional_engagement;
+exception when duplicate_object then null;
+end $$;
+
+do $$ begin
+  alter publication supabase_realtime add table public.devotional_comments;
+exception when duplicate_object then null;
+end $$;
+
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public
 as $$ begin insert into public.profiles (id, full_name) values (new.id, coalesce(new.raw_user_meta_data->>'full_name', 'GTO member')); return new; end; $$;
