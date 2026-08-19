@@ -10,6 +10,23 @@ The app currently falls back to browser-local preview data until Supabase creden
 4. Create a user in Supabase Authentication, then promote that user with the admin SQL comment at the bottom of the schema file.
 5. Restart the Vite server.
 
+## Password-recovery email delivery
+
+The reset form requests an email from Supabase Auth. A successful request only means
+that Supabase accepted it; for security, it does not reveal whether the email address
+has an account. Before relying on the form in production, configure email delivery in
+the Supabase Dashboard:
+
+1. In **Authentication > URL Configuration**, set the Site URL to the deployed GTO
+   URL and add `https://YOUR-DOMAIN/reset-password` to Redirect URLs (add the local
+   Vite URL too when testing locally).
+2. In **Authentication > Email Templates**, ensure the **Reset Password** template is
+   enabled and still contains the confirmation URL variable.
+3. In **Project Settings > Auth > SMTP Settings**, set up a production SMTP provider.
+   The built-in sender is rate-limited and intended only for testing.
+4. Confirm that the admin email exists under **Authentication > Users** and check the
+   provider's delivery log plus the recipient's Spam/Junk folder.
+
 For an existing project, run `supabase/media_posts.sql` once to enable admin publishing of announcements, uploaded videos/images, and hosted media URLs on the Media page.
 
 Never place the Supabase service-role key in this frontend. Only the anon key belongs in `.env.local`; row-level security protects the data.

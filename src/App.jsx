@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { BrowserRouter, Routes, Route, Link, Navigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { BrowserRouter, Routes, Route, Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import "./App.css";
 
 import heroImage from "./assets/gto-hero.jpg";
@@ -14,12 +14,25 @@ import Join from "./pages/Join";
 import Member from "./pages/Member";
 import Admin from "./pages/Admin";
 import AdminLogin from "./pages/AdminLogin";
+import PasswordReset from "./pages/PasswordReset";
 import { AppDataProvider } from "./data/AppDataContext";
 import { useAppData } from "./data/useAppData";
 
 function ProtectedAdmin() {
   const { admin } = useAppData();
   return admin ? <Admin /> : <Navigate to="/admin-login" replace />;
+}
+
+function RecoveryRedirect() {
+  const { passwordRecovery } = useAppData();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (passwordRecovery && location.pathname !== "/reset-password") navigate("/reset-password", { replace: true });
+  }, [location.pathname, navigate, passwordRecovery]);
+
+  return null;
 }
 
 function Home() {
@@ -153,7 +166,7 @@ return (
     <BrowserRouter>
       <AppDataProvider>
       <div className="gto-app">
-        
+        <RecoveryRedirect />
         <SiteHeader menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
         <Routes>
           <Route path="/" element={<Home />} />
@@ -165,6 +178,7 @@ return (
           <Route path="/join" element={<Join />} />
           <Route path="/member" element={<Member />} />
           <Route path="/admin-login" element={<AdminLogin />} />
+          <Route path="/reset-password" element={<PasswordReset />} />
           <Route path="/admin" element={<ProtectedAdmin />} />
         </Routes>
 
@@ -192,7 +206,9 @@ return (
       <Link to="/">Home</Link>
       <Link to="/devotional">Devotional</Link>
       <Link to="/community">Community</Link>
+      <Link to="/community-wall">Community Wall</Link>
       <Link to="/media">Media</Link>
+      <Link to="/announcements">Announcements</Link>
     </div>
 
     <div className="footer-links">

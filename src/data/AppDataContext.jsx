@@ -78,6 +78,7 @@ export function AppDataProvider({ children }) {
   const [communityPosts, setCommunityPosts] = useStoredState("gto-community-posts-v1", starterCommunityPosts);
   const [engagement, setEngagement] = useStoredState("gto-engagement-v2", {});
   const [backendLoading, setBackendLoading] = useState(isSupabaseConfigured);
+  const [passwordRecovery, setPasswordRecovery] = useState(false);
   const [mediaUpdateNotice, setMediaUpdateNotice] = useState("");
   const remoteActions = useRef({});
 
@@ -195,6 +196,9 @@ export function AppDataProvider({ children }) {
   useEffect(() => {
     if (!supabase) return undefined;
     let active = true;
+    if (window.location.hash.includes("type=recovery") || new URLSearchParams(window.location.search).has("code")) {
+      setPasswordRecovery(true);
+    }
     const initialize = async () => {
       const { data } = await supabase.auth.getSession();
       if (active) {
@@ -208,6 +212,10 @@ export function AppDataProvider({ children }) {
       if (event === "SIGNED_OUT") {
         setMember(null);
         setAdmin(null);
+        setPasswordRecovery(false);
+      } else if (event === "PASSWORD_RECOVERY") {
+        setPasswordRecovery(true);
+        if (session) remoteActions.current.applyRemoteSession(session);
       } else if (session) {
         remoteActions.current.applyRemoteSession(session);
       }
@@ -288,6 +296,22 @@ export function AppDataProvider({ children }) {
     const valid = email.trim().toLowerCase() === "admin@gtooutreach.org" && password === "GTO-Admin-2026";
     if (!valid) return false;
     setAdmin({ email: "admin@gtooutreach.org", role: "admin" });
+    return { success: true };
+  };
+
+  const sendPasswordRecovery = async (email) => {
+    if (!supabase) return { success: false, error: "Password recovery requires Supabase." };
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    return error ? { success: false, error: error.message } : { success: true };
+  };
+
+  const updatePassword = async (password) => {
+    if (!supabase) return { success: false, error: "Password recovery requires Supabase." };
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) return { success: false, error: error.message };
+    setPasswordRecovery(false);
     return { success: true };
   };
 
@@ -515,10 +539,13 @@ export function AppDataProvider({ children }) {
     totalMembers: members.length,
     backendConnected: isSupabaseConfigured,
     backendLoading,
+    passwordRecovery,
     joinCommunity,
     leaveCommunity,
     signInMember,
     signInAdmin,
+    sendPasswordRecovery,
+    updatePassword,
     signOutAdmin,
     toggleLike,
     markComplete,
