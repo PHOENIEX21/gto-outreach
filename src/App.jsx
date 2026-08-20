@@ -1,22 +1,26 @@
-import { useEffect, useState } from "react";
-import { BrowserRouter, Routes, Route, Link, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { lazy, Suspense, useEffect, useState } from "react";
+import { BrowserRouter, Routes, Route, Link, NavLink, Navigate, useLocation, useNavigate } from "react-router-dom";
 import "./App.css";
 
 import heroImage from "./assets/gto-hero.jpg";
 import logoImage from "./assets/gto-logo.jpg";
 
-import Devotional from "./pages/Devotional";
-import Community from "./pages/Community";
-import CommunityWall from "./pages/CommunityWall";
-import Media from "./pages/Media";
-import Announcements from "./pages/Announcements";
-import Join from "./pages/Join";
-import Member from "./pages/Member";
-import Admin from "./pages/Admin";
-import AdminLogin from "./pages/AdminLogin";
-import PasswordReset from "./pages/PasswordReset";
+import NotFound from "./pages/NotFound";
 import { AppDataProvider } from "./data/AppDataContext";
 import { useAppData } from "./data/useAppData";
+
+// Route-level code splitting: each page is loaded on demand to keep the
+// initial bundle small and speed up first paint.
+const Devotional = lazy(() => import("./pages/Devotional"));
+const Community = lazy(() => import("./pages/Community"));
+const CommunityWall = lazy(() => import("./pages/CommunityWall"));
+const Media = lazy(() => import("./pages/Media"));
+const Announcements = lazy(() => import("./pages/Announcements"));
+const Join = lazy(() => import("./pages/Join"));
+const Member = lazy(() => import("./pages/Member"));
+const Admin = lazy(() => import("./pages/Admin"));
+const AdminLogin = lazy(() => import("./pages/AdminLogin"));
+const PasswordReset = lazy(() => import("./pages/PasswordReset"));
 
 function ProtectedAdmin() {
   const { admin } = useAppData();
@@ -36,31 +40,43 @@ function RecoveryRedirect() {
 }
 
 function Home() {
+  const { devotionals } = useAppData();
+  const featured = devotionals[0];
+
   return (
     <main className="landing-page">
       <section className="landing-hero" id="home">
-        <svg className="landing-rays" viewBox="0 0 640 640" aria-hidden="true">
-          <circle className="ray-one" cx="320" cy="640" r="180" />
-          <circle className="ray-two" cx="320" cy="640" r="260" />
-          <circle className="ray-three" cx="320" cy="640" r="340" />
-        </svg>
         <div className="landing-copy">
-          <p className="landing-eyebrow">Mandated to preach the gospel</p>
-          <h1>Taking Christ<span>to the world</span></h1>
-          <p className="landing-subtitle">We reach hearts, transform lives, and raise believers who live boldly for Christ.</p>
+          <p className="landing-kicker">GTO · GLAD TIDINGS OUTREACH</p>
+          <p className="landing-eyebrow">Mandated to preach the Gospel</p>
+          <h1>Take the Gospel<span>beyond the walls.</span></h1>
+          <p className="landing-subtitle">A living community for people discovering Christ, growing in the Word, and carrying hope into everyday life.</p>
           <div className="landing-actions">
-            <Link to="/devotional" className="landing-primary">Read today&apos;s word <span aria-hidden="true">→</span></Link>
-            <Link to="/join" className="landing-secondary">Join the community</Link>
+            <Link to="/devotional" className="landing-primary">Explore today&apos;s Word <span aria-hidden="true">→</span></Link>
+            <Link to="/join" className="landing-secondary">Join the outreach</Link>
           </div>
+          <p className="landing-scroll-note"><span aria-hidden="true">↓</span> Begin with the Word</p>
         </div>
-        <div className="landing-visual">
+        <div className="landing-stage">
           <img src={heroImage} alt="Glad Tidings Outreach worship and gospel outreach" className="landing-image" />
-          <div className="landing-quote">
-            <span aria-hidden="true">&quot;</span>
-            <p>Go into all the world and preach the gospel.</p>
-            <small>Mark 16:15</small>
+          <div className="landing-stage-shade" aria-hidden="true" />
+          <div className="landing-stage-label"><span>01</span><span>THE OUTREACH</span></div>
+          <div className="landing-video-card">
+            <video autoPlay muted loop playsInline preload="metadata" poster={heroImage} aria-label="GTO worship and outreach video">
+              <source src="/videos/holiness.mp4" type="video/mp4" />
+            </video>
+            <span className="landing-video-caption"><span className="landing-live-dot" aria-hidden="true" /> Watch the mission unfold</span>
           </div>
         </div>
+      </section>
+      <section className="landing-word" aria-labelledby="landing-word-title">
+        <div className="landing-word-index"><span>02</span><span>TODAY&apos;S WORD</span></div>
+        <div className="landing-word-copy">
+          <p className="landing-eyebrow">A moment with God</p>
+          <h2 id="landing-word-title">{featured?.scripture || "The Word is alive and speaking."}</h2>
+          <p className="landing-word-reference">{featured?.reference || "Glad Tidings Outreach"}</p>
+        </div>
+        <Link to={featured ? `/devotional?id=${featured.id}` : "/devotional"} className="landing-word-link">Read today&apos;s devotional <span aria-hidden="true">↗</span></Link>
       </section>
       <section className="landing-stats" aria-label="Glad Tidings Outreach impact">
         <div><strong>40+</strong><span>Nations reached</span></div>
@@ -119,7 +135,7 @@ function Home() {
 }
 
 function SiteHeader({ menuOpen, setMenuOpen }) {
-  const { mediaUpdateNotice, clearMediaUpdateNotice } = useAppData();
+  const { member, mediaUpdateNotice, clearMediaUpdateNotice, theme, toggleTheme, unreadNotifications, signOutMember } = useAppData();
 
   const openAnnouncements = () => {
     setMenuOpen(false);
@@ -128,7 +144,7 @@ function SiteHeader({ menuOpen, setMenuOpen }) {
 
   return (
     <header className="gto-header landing-header">
-      <Link to="/" className="brand-link">
+      <Link to="/" className="brand-link" aria-label="GTO home">
         <img src={logoImage} alt="Glad Tidings Outreach logo" className="dashboard-logo" />
         <div className="brand"><h1>Glad Tidings</h1><span>Outreach</span></div>
       </Link>
@@ -142,8 +158,16 @@ function SiteHeader({ menuOpen, setMenuOpen }) {
         <Link to="/admin-login" className="staff-nav-link">Staff</Link>
       </nav>
 
-      <Link to="/join" className="header-button">Join Us</Link>
-      <Link to="/member" className="member-header-link">Member space</Link>
+        {!member && <Link to="/join" className="header-button">Join Us</Link>}
+        {member && <div className="member-header-tools"><Link to="/member" className="member-header-link"><span className="header-member-avatar">{member.avatarUrl ? <img src={member.avatarUrl} alt="" /> : member.name.slice(0, 1).toUpperCase()}</span><span>{member.name.split(" ")[0]}&apos;s space</span>{unreadNotifications > 0 && <span className="member-alert-badge" aria-label={`${unreadNotifications} unread notifications`}>{unreadNotifications > 9 ? "9+" : unreadNotifications}</span>}</Link><button type="button" className="header-signout" onClick={signOutMember}>Sign out</button></div>}
+      <button
+        type="button"
+        className="theme-toggle"
+        aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+        onClick={toggleTheme}
+      >
+        {theme === "dark" ? "☀️" : "🌙"}
+      </button>
       <button type="button" className="menu-button" aria-label="Open menu" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}>☰</button>
 
       {menuOpen && <nav className="mobile-menu">
@@ -152,22 +176,36 @@ function SiteHeader({ menuOpen, setMenuOpen }) {
         <Link to="/community" onClick={() => setMenuOpen(false)}>Community</Link>
         <Link to="/media" onClick={() => setMenuOpen(false)}>Media</Link>
         <Link to="/announcements" onClick={openAnnouncements}>Announcements {mediaUpdateNotice && <span className="header-update-dot">New</span>}</Link>
+        <Link to="/member" onClick={() => setMenuOpen(false)}>{member ? `${member.name.split(" ")[0]}'s space` : "Member space"}{member && unreadNotifications > 0 && <span className="header-update-dot">{unreadNotifications > 9 ? "9+" : unreadNotifications}</span>}</Link>
+        {member && <button type="button" className="mobile-signout" onClick={() => { setMenuOpen(false); signOutMember(); }}>Sign out</button>}
         <Link to="/admin-login" onClick={() => setMenuOpen(false)}>Staff sign in</Link>
+        <button type="button" className="mobile-theme-toggle" onClick={toggleTheme}>{theme === "dark" ? "☀️ Use light theme" : "🌙 Use dark theme"}</button>
       </nav>}
     </header>
   );
 }
 
+function PageLoading() {
+  return <p className="content-loading" role="status">Loading GTO...</p>;
+}
+
+function BackendStatus() {
+  const { backendError, clearBackendError } = useAppData();
+  if (!backendError) return null;
+  return <div className="backend-error" role="alert"><span>{backendError}</span><button type="button" onClick={clearBackendError} aria-label="Dismiss backend error">×</button></div>;
+}
+
 function App() {
-  const [menuOpen, setMenuOpen] =
-useState(false);
- 
-return (
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  return (
     <BrowserRouter>
       <AppDataProvider>
       <div className="gto-app">
         <RecoveryRedirect />
         <SiteHeader menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+        <BackendStatus />
+        <Suspense fallback={<PageLoading />}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/devotional" element={<Devotional />} />
@@ -180,7 +218,9 @@ return (
           <Route path="/admin-login" element={<AdminLogin />} />
           <Route path="/reset-password" element={<PasswordReset />} />
           <Route path="/admin" element={<ProtectedAdmin />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
+        </Suspense>
 
 <footer className="gto-footer">
   <div className="footer-main">
@@ -218,6 +258,12 @@ return (
       <Link to="/member">Member Space</Link>
       <Link to="/devotional">Today&apos;s Word</Link>
       <Link to="/media">GTO Media</Link>
+      <a className="social-link" href="https://www.facebook.com/profile.php?id=61559895093699" target="_blank" rel="noopener noreferrer" aria-label="Open Facebook profile 01"><span className="social-logo facebook-logo" aria-hidden="true">f</span><span><strong>Facebook</strong><small>Profile 01 · Visit page</small></span></a>
+      <a className="social-link" href="https://www.facebook.com/GTIPGGTIPG" target="_blank" rel="noopener noreferrer" aria-label="Open GTIPG Facebook page"><span className="social-logo facebook-logo" aria-hidden="true">f</span><span><strong>GTIPG</strong><small>Facebook · Visit page</small></span></a>
+      <a className="social-link" href="https://www.facebook.com/profile.php?id=61571096139841" target="_blank" rel="noopener noreferrer" aria-label="Open Facebook profile 03"><span className="social-logo facebook-logo" aria-hidden="true">f</span><span><strong>Facebook</strong><small>Profile 03 · Visit page</small></span></a>
+      <a className="social-link" href="https://www.facebook.com/profile.php?id=61557515515868" target="_blank" rel="noopener noreferrer" aria-label="Open Facebook profile 04"><span className="social-logo facebook-logo" aria-hidden="true">f</span><span><strong>Facebook</strong><small>Profile 04 · Visit page</small></span></a>
+      <a className="social-link" href="https://www.tiktok.com/@ifeomabasil11" target="_blank" rel="noopener noreferrer" aria-label="Open Ifeoma Basil TikTok account"><span className="social-logo tiktok-logo" aria-hidden="true">♪</span><span><strong>Ifeoma Basil</strong><small>TikTok · Visit account</small></span></a>
+      <a className="social-link" href="https://www.tiktok.com/@gladtidingsoutreach" target="_blank" rel="noopener noreferrer" aria-label="Open Glad Tidings Outreach TikTok account"><span className="social-logo tiktok-logo" aria-hidden="true">♪</span><span><strong>Glad Tidings Outreach</strong><small>TikTok · Visit account</small></span></a>
     </div>
 
     <div className="footer-links">
@@ -233,11 +279,11 @@ return (
   </div>
 </footer>
 
-        <nav className="bottom-nav">
-          <Link to="/">Home</Link>
-          <Link to="/devotional">Devotional</Link>
-          <Link to="/community">Community</Link>
-          <Link to="/media">Media</Link>
+        <nav className="bottom-nav" aria-label="Primary navigation">
+          <NavLink to="/" end><span aria-hidden="true">⌂</span><span className="bottom-nav-label">Home</span></NavLink>
+          <NavLink to="/devotional"><span aria-hidden="true">◫</span><span className="bottom-nav-label">Devotional</span></NavLink>
+          <NavLink to="/community"><span aria-hidden="true">♧</span><span className="bottom-nav-label">Community</span></NavLink>
+          <NavLink to="/media"><span aria-hidden="true">▶</span><span className="bottom-nav-label">Media</span></NavLink>
         </nav>
       </div>
       </AppDataProvider>

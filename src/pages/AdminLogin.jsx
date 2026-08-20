@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAppData } from "../data/useAppData";
 
@@ -10,10 +10,11 @@ function AdminLogin() {
   const [recoveryEmail, setRecoveryEmail] = useState("");
   const [recoveryMessage, setRecoveryMessage] = useState("");
 
-  if (admin) {
-    navigate("/admin", { replace: true });
-    return null;
-  }
+  useEffect(() => {
+    if (admin) navigate("/admin", { replace: true });
+  }, [admin, navigate]);
+
+  if (admin) return null;
 
   const submit = async (event) => {
     event.preventDefault();
@@ -54,7 +55,7 @@ function AdminLogin() {
           <input type="email" value={recoveryEmail} onChange={(event) => setRecoveryEmail(event.target.value)} placeholder="Enter your account email" aria-label="Recovery email" />
           <button type="button" className="text-button" onClick={requestRecovery}>Send reset link</button>
         </div>
-        <Link to="/" className="admin-back-link">Back to GTO home</Link>
+        <div className="admin-login-links"><Link to="/join" className="admin-community-link">Join the community <span aria-hidden="true">→</span></Link><Link to="/" className="admin-back-link">Back to GTO home</Link></div>
       </form>
     </main>
   );

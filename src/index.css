@@ -1,34 +1,53 @@
+/* Themeable design tokens. These variables are consumed by App.css rules
+   throughout the app. The attribute selector on <html> lets the AppDataProvider
+   switch themes and persist the choice in localStorage ("gto-theme-v1"). */
+
 :root {
   font-family: Inter, sans-serif;
-  color: #0b2a1f;
-  background: #e9e6db;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+
+  /* Light theme tokens */
+  --color-text: #17251c;
+  --color-text-soft: #5c6258;
+  --color-bg: #f7f5ef;
+  --color-bg-soft: #e9e6db;
+  --color-surface: #ffffff;
+  --color-border: rgba(23, 61, 42, 0.08);
+  --color-border-strong: rgba(11, 42, 31, 0.12);
+  --color-ink: #0b2a1f;
+  --color-forest: #133527;
+  --color-gold: #e8b84b;
+  --color-gold-dim: #c99a3a;
+  --color-ember: #dd6e45;
+  --color-ivory: #f7f2e4;
+  --color-header-bg: rgba(255, 255, 255, 0.96);
+  --color-header-border: rgba(23, 61, 42, 0.08);
+  --color-body-bg: #f7f5ef;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
+/* Dark theme overrides — applied when <html data-theme="dark"> */
+:root[data-theme="dark"] {
+  --color-text: #e5e7eb;
+  --color-text-soft: #9ca3af;
+  --color-bg: #16171e;
+  --color-bg-soft: #1f2028;
+  --color-surface: #23252f;
+  --color-border: rgba(226, 232, 220, 0.08);
+  --color-border-strong: rgba(23, 61, 42, 0.2);
+  --color-ink: #f7f2e4;
+  --color-forest: #0a2518;
+  --color-ivory: #f7f2e4;
+  --color-header-bg: rgba(22, 23, 35, 0.96);
+  --color-header-border: rgba(226, 232, 220, 0.12);
+  --color-body-bg: #16171e;
 }
 
 body {
   margin: 0;
+  background: var(--color-body-bg);
+  color: var(--color-text);
 }
 
 #root {
@@ -37,4 +56,32 @@ body {
 
 p {
   margin: 0;
+}
+
+/* Theme toggle button */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 20px;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.theme-toggle:hover {
+  background: var(--color-bg);
+  border-color: var(--color-gold);
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
 }

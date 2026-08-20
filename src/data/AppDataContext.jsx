@@ -1,85 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AppDataContext } from "./AppDataContextValue";
 import { isSupabaseConfigured, supabase } from "../lib/supabase";
-
-const starterDevotionals = [
-  {
-    id: "mark-16-15",
-    title: "Go into all the world",
-    reference: "Mark 16:15",
-    scripture: "Go into all the world and preach the gospel to all creation.",
-    reflection: "The Gospel is not something we keep to ourselves. God has placed us where we are so that our words, actions and lives can point people toward Jesus.",
-    prayer: "Lord, give me courage to share Your love today. Open my eyes to the people around me and help my life point others to Jesus. Amen.",
-    publishedAt: "2026-08-18",
-    status: "published",
-    likes: 0,
-    completions: 0,
-    comments: 0,
-  },
-  {
-    id: "one-body",
-    title: "Many parts, one body",
-    reference: "1 Corinthians 12:12",
-    scripture: "Just as a body, though one, has many parts, but all its many parts form one body, so it is with Christ.",
-    reflection: "Your place in the Body of Christ matters. We become stronger when every believer brings their gifts, story and faith into the family.",
-    prayer: "Jesus, show me how to serve Your people with humility and joy. Make me a source of unity today. Amen.",
-    publishedAt: "2026-08-17",
-    status: "published",
-    likes: 0,
-    completions: 0,
-    comments: 0,
-  },
-];
-
-const starterMediaPosts = [];
-const starterCommunityPosts = [];
-
-function readStorage(key, fallback) {
-  try {
-    const saved = window.localStorage.getItem(key);
-    return saved ? JSON.parse(saved) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function useStoredState(key, fallback) {
-  const [value, setValue] = useState(() => readStorage(key, fallback));
-
-  const update = useCallback((nextValue) => {
-    setValue((currentValue) => {
-      const resolvedValue = typeof nextValue === "function" ? nextValue(currentValue) : nextValue;
-      window.localStorage.setItem(key, JSON.stringify(resolvedValue));
-      return resolvedValue;
-    });
-  }, [key]);
-
-  return [value, update];
-}
-
-function summarizeActivity(activity = {}, mediaActivity = {}, communityActivity = {}) {
-  const completed = activity.completed || [];
-  const liked = activity.liked || [];
-  const comments = activity.comments || [];
-  const mediaLiked = mediaActivity.liked || 0;
-  const mediaComments = mediaActivity.comments || 0;
-  const communityPosts = communityActivity.posts || 0;
-  const communitySupport = communityActivity.support || 0;
-  const points = completed.length * 10 + liked.length * 3 + comments.length * 5 + mediaLiked * 3 + mediaComments * 5 + communityPosts * 5 + communitySupport * 3;
-  const grade = points >= 100 ? "A+" : points >= 70 ? "A" : points >= 40 ? "B" : points >= 15 ? "C" : points > 0 ? "D" : "-";
-  const label = points >= 70 ? "Highly active" : points >= 40 ? "Active" : points > 0 ? "Growing" : "Getting started";
-  return {
-    points,
-    grade,
-    label,
-    completed: completed.length,
-    liked: liked.length + mediaLiked,
-    comments: comments.length + mediaComments,
-    communityPosts,
-    communitySupport,
-    engagements: completed.length + liked.length + comments.length + mediaLiked + mediaComments + communityPosts + communitySupport,
-  };
-}
+import { starterDevotionals, starterMediaPosts, starterCommunityPosts, useStoredState, summarizeActivity, debounce } from "./dataHelpers";
 
 export function AppDataProvider({ children }) {
   const [member, setMember] = useStoredState("gto-member-v2", null);
@@ -89,12 +11,35 @@ export function AppDataProvider({ children }) {
   const [mediaPosts, setMediaPosts] = useStoredState("gto-media-posts-v1", starterMediaPosts);
   const [communityPosts, setCommunityPosts] = useStoredState("gto-community-posts-v1", starterCommunityPosts);
   const [engagement, setEngagement] = useStoredState("gto-engagement-v2", {});
+  const [shares, setShares] = useStoredState("gto-shares-v1", {});
+  const [readingProgress, setReadingProgress] = useStoredState("gto-reading-progress-v1", {});
+  const [notifications, setNotifications] = useStoredState("gto-notifications-v1", []);
+  const [theme, setTheme] = useStoredState("gto-theme-v1", "light");
   const [backendLoading, setBackendLoading] = useState(isSupabaseConfigured);
+  const [backendError, setBackendError] = useState("");
   const [passwordRecovery, setPasswordRecovery] = useState(false);
   const [mediaUpdateNotice, setMediaUpdateNotice] = useState("");
   const remoteActions = useRef({});
+  const scheduleReloadRef = useRef(null);
+  if (!scheduleReloadRef.current) scheduleReloadRef.current = debounce(() => remoteActions.current.loadRemoteData(), 400);
 
   const memberEngagement = member ? (engagement[member.id] || { completed: [], liked: [], comments: [] }) : { completed: [], liked: [], comments: [] };
+  const memberReadingProgress = member ? (readingProgress[member.id] || {}) : {};
+  const memberReadingHistory = devotionals
+    .filter((item) => memberReadingProgress[item.id])
+    .map((item) => ({ ...item, reading: memberReadingProgress[item.id] }))
+    .sort((first, second) => new Date(second.reading.updatedAt) - new Date(first.reading.updatedAt));
+  const readingDates = new Set(Object.values(memberReadingProgress).filter((item) => item.updatedAt).map((item) => new Date(item.updatedAt).toISOString().slice(0, 10)));
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const streakCursor = readingDates.has(today.toISOString().slice(0, 10)) ? today : yesterday;
+  let readingStreak = 0;
+  while (readingDates.has(streakCursor.toISOString().slice(0, 10))) {
+    readingStreak += 1;
+    streakCursor.setDate(streakCursor.getDate() - 1);
+  }
   const memberMediaActivity = {
     liked: mediaPosts.filter((post) => post.likedByMember).length,
     comments: mediaPosts.reduce((total, post) => total + (post.comments || []).filter((comment) => comment.userId === member?.id).length, 0),
@@ -102,6 +47,7 @@ export function AppDataProvider({ children }) {
   const memberCommunityActivity = {
     posts: communityPosts.filter((post) => post.userId === member?.id).length,
     support: communityPosts.filter((post) => post.supportedByMember).length,
+    shares: (shares[member?.id] || []).length,
   };
   const devotionalComments = Object.values(engagement)
     .flatMap((activity) => activity.comments || [])
@@ -114,6 +60,10 @@ export function AppDataProvider({ children }) {
     memberActivity.comments >= 1 && { icon: "✎", name: "Encourager", detail: "Shared encouragement" },
     communityPosts.some((post) => post.supportedByMember) && { icon: "♥", name: "Standing with you", detail: "Supported the community" },
   ].filter(Boolean);
+  const memberNotifications = notifications
+    .filter((notification) => notification.userId === member?.id)
+    .sort((first, second) => new Date(second.createdAt) - new Date(first.createdAt));
+  const unreadNotifications = memberNotifications.filter((notification) => !notification.read).length;
   const activityLeaderboard = members
     .filter((profile) => profile.role !== "admin")
     .map((profile) => {
@@ -124,6 +74,7 @@ export function AppDataProvider({ children }) {
       const communityActivity = {
         posts: communityPosts.filter((post) => post.userId === profile.id).length,
         support: communityPosts.filter((post) => (post.supportedUserIds || []).includes(profile.id)).length,
+        shares: (shares[profile.id] || []).length,
       };
       return { ...profile, activity: summarizeActivity(engagement[profile.id], mediaActivity, communityActivity) };
     })
@@ -135,26 +86,81 @@ export function AppDataProvider({ children }) {
       setAdmin(null);
       return;
     }
-    const { data: profile } = await supabase.from("profiles").select("id, full_name, role, created_at").eq("id", session.user.id).single();
+    let { data: profile, error: profileError } = await supabase.from("profiles").select("id, full_name, role, avatar_url, created_at").eq("id", session.user.id).single();
+    if (profileError?.message?.includes("avatar_url")) {
+      const fallback = await supabase.from("profiles").select("id, full_name, role, created_at").eq("id", session.user.id).single();
+      profile = fallback.data;
+      profileError = fallback.error;
+    }
+    if (profileError) {
+      setBackendError(profileError.message);
+      setMember(null);
+      setAdmin(null);
+      return;
+    }
     if (profile) {
-      setMember({ id: profile.id, name: profile.full_name, email: session.user.email, joinedAt: profile.created_at, role: profile.role });
-      if (profile.role === "admin") setAdmin({ id: profile.id, email: session.user.email, role: "admin" });
+      setMember({ id: profile.id, name: profile.full_name, email: session.user.email, avatarUrl: profile.avatar_url, joinedAt: profile.created_at, role: profile.role });
+      if (profile.role === "admin") setAdmin({ id: profile.id, name: profile.full_name, email: session.user.email, role: "admin" });
+      else setAdmin(null);
+    } else {
+      setMember(null);
+      setAdmin(null);
     }
   };
 
   const loadRemoteData = async () => {
     if (!supabase) return;
-    const { data: remoteProfiles } = await supabase.from("profiles").select("id, full_name, role, created_at").order("created_at", { ascending: false });
+    let { data: remoteProfiles, error: profilesError } = await supabase.from("profiles").select("id, full_name, role, avatar_url, created_at").order("created_at", { ascending: false });
+    if (profilesError?.message?.includes("avatar_url")) {
+      const fallback = await supabase.from("profiles").select("id, full_name, role, created_at").order("created_at", { ascending: false });
+      remoteProfiles = fallback.data;
+      profilesError = fallback.error;
+    }
+    if (profilesError) setBackendError(profilesError.message);
     const { data: remoteDevotionals } = await supabase.from("devotionals").select("id, title, reference, scripture, reflection, prayer, published_at").order("published_at", { ascending: false });
-    const { data: remoteMediaPosts } = await supabase.from("media_posts").select("id, kind, title, body, media_url, published_at, profiles(full_name)").order("published_at", { ascending: false });
-    const { data: remoteMediaComments } = await supabase.from("media_comments").select("id, media_post_id, user_id, body, created_at, profiles(full_name)").order("created_at", { ascending: false });
+    const { data: remoteMediaPosts } = await supabase.from("media_posts").select("id, kind, title, body, media_url, published_at, published_by, profiles(full_name)").order("published_at", { ascending: false });
+    const { data: remoteMediaComments } = await supabase.from("media_comments").select("id, media_post_id, user_id, body, created_at, profiles(full_name, avatar_url)").order("created_at", { ascending: false });
     const { data: remoteMediaReactions } = await supabase.from("media_reactions").select("media_post_id, user_id, liked");
     const { data: remoteCommunityPosts } = await supabase.from("community_posts").select("id, kind, title, body, user_id, created_at, profiles(full_name)").order("created_at", { ascending: false });
     const { data: remoteCommunitySupport } = await supabase.from("community_support").select("post_id, user_id, kind");
+    const { data: remoteCommunityComments } = await supabase.from("community_comments").select("id, post_id, user_id, body, created_at, profiles(full_name, avatar_url)").order("created_at", { ascending: true });
+    const { data: remoteShares } = await supabase.from("content_shares").select("user_id, content_type, content_id");
+    const { data: remoteNotifications } = await supabase.from("notifications").select("id, user_id, type, title, body, link, read, created_at").order("created_at", { ascending: false }).limit(100);
+    const { data: remoteProgress } = await supabase.from("devotional_progress").select("user_id, devotional_id, progress, scroll_ratio, updated_at");
+    if (remoteShares) {
+      const nextShares = {};
+      remoteShares.forEach((share) => {
+        nextShares[share.user_id] = [...(nextShares[share.user_id] || []), `${share.content_type}:${share.content_id}`];
+      });
+      setShares(nextShares);
+    }
+    if (remoteNotifications) {
+      setNotifications(remoteNotifications.map((notification) => ({
+        id: notification.id,
+        userId: notification.user_id,
+        type: notification.type,
+        title: notification.title,
+        body: notification.body,
+        link: notification.link,
+        read: notification.read,
+        createdAt: notification.created_at,
+      })));
+    }
+    if (remoteProgress) {
+      const nextProgress = {};
+      remoteProgress.forEach((item) => {
+        nextProgress[item.user_id] = {
+          ...(nextProgress[item.user_id] || {}),
+          [item.devotional_id]: { progress: item.progress, scrollRatio: Number(item.scroll_ratio), updatedAt: item.updated_at },
+        };
+      });
+      setReadingProgress(nextProgress);
+    }
     if (remoteProfiles) {
       setMembers(remoteProfiles.map((profile) => ({
         id: profile.id,
         name: profile.full_name,
+        avatarUrl: profile.avatar_url || null,
         email: "",
         joinedAt: profile.created_at,
         role: profile.role,
@@ -162,7 +168,7 @@ export function AppDataProvider({ children }) {
     }
     if (remoteDevotionals) {
       const { data: remoteEngagement } = await supabase.from("devotional_engagement").select("devotional_id, user_id, liked, completed");
-      const { data: remoteComments } = await supabase.from("devotional_comments").select("id, devotional_id, user_id, body, created_at, profiles(full_name)").order("created_at", { ascending: false });
+      const { data: remoteComments } = await supabase.from("devotional_comments").select("id, devotional_id, user_id, body, created_at, profiles(full_name, avatar_url)").order("created_at", { ascending: false });
       const nextEngagement = {};
       (remoteEngagement || []).forEach((item) => {
         const current = nextEngagement[item.user_id] || { completed: [], liked: [], comments: [] };
@@ -172,7 +178,7 @@ export function AppDataProvider({ children }) {
       });
       (remoteComments || []).forEach((item) => {
         const current = nextEngagement[item.user_id] || { completed: [], liked: [], comments: [] };
-        current.comments.push({ id: item.id, devotionalId: item.devotional_id, author: item.profiles?.full_name || "GTO member", text: item.body, createdAt: item.created_at });
+        current.comments.push({ id: item.id, userId: item.user_id, devotionalId: item.devotional_id, author: item.profiles?.full_name || "Member", authorAvatar: item.profiles?.avatar_url || null, text: item.body, createdAt: item.created_at });
         nextEngagement[item.user_id] = current;
       });
       setEngagement(nextEngagement);
@@ -192,8 +198,9 @@ export function AppDataProvider({ children }) {
         body: item.body,
         mediaUrl: item.media_url,
         publishedAt: item.published_at,
-        author: item.profiles?.full_name || "GTO team",
-        comments: (remoteMediaComments || []).filter((comment) => comment.media_post_id === item.id).map((comment) => ({ id: comment.id, userId: comment.user_id, author: comment.profiles?.full_name || "GTO member", text: comment.body, createdAt: comment.created_at })),
+        publishedBy: item.published_by,
+        author: item.profiles?.full_name || "Member",
+        comments: (remoteMediaComments || []).filter((comment) => comment.media_post_id === item.id).map((comment) => ({ id: comment.id, userId: comment.user_id, author: comment.profiles?.full_name || "Member", authorAvatar: comment.profiles?.avatar_url || null, text: comment.body, createdAt: comment.created_at })),
         likes: (remoteMediaReactions || []).filter((reaction) => reaction.media_post_id === item.id && reaction.liked).length,
         likedUserIds: (remoteMediaReactions || []).filter((reaction) => reaction.media_post_id === item.id && reaction.liked).map((reaction) => reaction.user_id),
         likedByMember: (remoteMediaReactions || []).some((reaction) => reaction.media_post_id === item.id && reaction.user_id === member?.id && reaction.liked),
@@ -206,11 +213,12 @@ export function AppDataProvider({ children }) {
         title: post.title,
         body: post.body,
         userId: post.user_id,
-        author: post.profiles?.full_name || "GTO member",
+        author: post.profiles?.full_name || "Member",
         createdAt: post.created_at,
         supportCount: (remoteCommunitySupport || []).filter((support) => support.post_id === post.id).length,
         supportedUserIds: (remoteCommunitySupport || []).filter((support) => support.post_id === post.id).map((support) => support.user_id),
         supportedByMember: (remoteCommunitySupport || []).some((support) => support.post_id === post.id && support.user_id === member?.id),
+        comments: (remoteCommunityComments || []).filter((comment) => comment.post_id === post.id).map((comment) => ({ id: comment.id, userId: comment.user_id, author: comment.profiles?.full_name || "Member", authorAvatar: comment.profiles?.avatar_url || null, text: comment.body, createdAt: comment.created_at })),
       })));
     }
   };
@@ -247,6 +255,7 @@ export function AppDataProvider({ children }) {
     return () => {
       active = false;
       listener.subscription.unsubscribe();
+      scheduleReloadRef.current.cancel();
     };
   }, [setMember, setAdmin]);
 
@@ -256,17 +265,20 @@ export function AppDataProvider({ children }) {
       .channel("gto-live-media")
       .on("postgres_changes", { event: "*", schema: "public", table: "media_posts" }, (payload) => {
         if (payload.eventType === "INSERT") setMediaUpdateNotice("New GTO update just arrived.");
-        remoteActions.current.loadRemoteData();
+        scheduleReloadRef.current();
       })
-      .on("postgres_changes", { event: "*", schema: "public", table: "media_comments" }, () => remoteActions.current.loadRemoteData())
-      .on("postgres_changes", { event: "*", schema: "public", table: "media_reactions" }, () => remoteActions.current.loadRemoteData())
-      .on("postgres_changes", { event: "*", schema: "public", table: "community_posts" }, () => remoteActions.current.loadRemoteData())
-      .on("postgres_changes", { event: "*", schema: "public", table: "community_support" }, () => remoteActions.current.loadRemoteData())
-      .on("postgres_changes", { event: "*", schema: "public", table: "devotional_engagement" }, () => remoteActions.current.loadRemoteData())
-      .on("postgres_changes", { event: "*", schema: "public", table: "devotional_comments" }, () => remoteActions.current.loadRemoteData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "media_comments" }, () => scheduleReloadRef.current())
+      .on("postgres_changes", { event: "*", schema: "public", table: "media_reactions" }, () => scheduleReloadRef.current())
+      .on("postgres_changes", { event: "*", schema: "public", table: "community_posts" }, () => scheduleReloadRef.current())
+      .on("postgres_changes", { event: "*", schema: "public", table: "community_support" }, () => scheduleReloadRef.current())
+      .on("postgres_changes", { event: "*", schema: "public", table: "devotional_engagement" }, () => scheduleReloadRef.current())
+      .on("postgres_changes", { event: "*", schema: "public", table: "devotional_comments" }, () => scheduleReloadRef.current())
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications" }, () => scheduleReloadRef.current())
+      .on("postgres_changes", { event: "*", schema: "public", table: "devotional_progress" }, () => scheduleReloadRef.current())
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
+      scheduleReloadRef.current.cancel();
     };
   }, []);
 
@@ -302,7 +314,95 @@ export function AppDataProvider({ children }) {
     return true;
   };
 
+  const pushNotification = (userId, notification) => {
+    if (!userId || userId === member?.id) return;
+    setNotifications((current) => [{
+      id: `notification-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      userId,
+      read: false,
+      createdAt: new Date().toISOString(),
+      ...notification,
+    }, ...current].slice(0, 100));
+  };
+
+  const recordShare = async (contentType, contentId, title, link) => {
+    if (!member) return { success: true, alreadyRecorded: true };
+    const shareKey = `${contentType}:${contentId}`;
+    if ((shares[member.id] || []).includes(shareKey)) return { success: true, alreadyRecorded: true };
+    if (supabase) {
+      const { error } = await supabase.from("content_shares").insert({ user_id: member.id, content_type: contentType, content_id: contentId });
+      if (error && error.code !== "23505") return { success: false, error: error.message };
+    }
+    setShares((current) => ({ ...current, [member.id]: [...(current[member.id] || []), shareKey] }));
+    return { success: true, title, link };
+  };
+
+  const updateReadingProgress = useCallback(async (devotionalId, progress, scrollRatio = progress) => {
+    if (!member || !devotionalId) return;
+    const normalizedProgress = Math.max(0, Math.min(100, Math.round(progress)));
+    const normalizedRatio = Math.max(0, Math.min(1, scrollRatio));
+    if (supabase) {
+      await supabase.from("devotional_progress").upsert({ user_id: member.id, devotional_id: devotionalId, progress: normalizedProgress, scroll_ratio: normalizedRatio, updated_at: new Date().toISOString() });
+    }
+    setReadingProgress((current) => ({
+      ...current,
+      [member.id]: {
+        ...(current[member.id] || {}),
+        [devotionalId]: {
+          progress: normalizedProgress,
+          scrollRatio: normalizedRatio,
+          updatedAt: new Date().toISOString(),
+        },
+      },
+    }));
+  }, [member, setReadingProgress]);
+
+  const markNotificationRead = async (notificationId) => {
+    setNotifications((current) => current.map((notification) => notification.id === notificationId ? { ...notification, read: true } : notification));
+    if (supabase && !notificationId.startsWith("notification-")) await supabase.from("notifications").update({ read: true }).eq("id", notificationId);
+  };
+
+  const markAllNotificationsRead = async () => {
+    setNotifications((current) => current.map((notification) => notification.userId === member?.id ? { ...notification, read: true } : notification));
+    if (supabase && member) await supabase.from("notifications").update({ read: true }).eq("user_id", member.id).eq("read", false);
+  };
+
   const leaveCommunity = () => setMember(null);
+
+  const signOutMember = async () => {
+    if (supabase) await supabase.auth.signOut();
+    setMember(null);
+  };
+
+  const updateMemberProfile = async ({ name, file }) => {
+    if (!member || !name.trim()) return { success: false, error: "Enter a name for your profile." };
+    const trimmedName = name.trim();
+    if (supabase) {
+      let avatarUrl = member.avatarUrl || null;
+      if (file) {
+        const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
+        const filePath = `${member.id}/avatar.${extension}`;
+        const { error: uploadError } = await supabase.storage.from("avatars").upload(filePath, file, { contentType: file.type, upsert: true });
+        if (uploadError) return { success: false, error: uploadError.message };
+        avatarUrl = `${supabase.storage.from("avatars").getPublicUrl(filePath).data.publicUrl}?v=${Date.now()}`;
+      }
+      const { error } = await supabase.from("profiles").update({ full_name: trimmedName, avatar_url: avatarUrl }).eq("id", member.id);
+      if (error) return { success: false, error: error.message };
+      setMember((current) => ({ ...current, name: trimmedName, avatarUrl }));
+      return { success: true };
+    }
+    let avatarUrl = member.avatarUrl || null;
+    if (file) avatarUrl = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error("Unable to read that image."));
+      reader.readAsDataURL(file);
+    });
+    const nextMember = { ...member, name: trimmedName, avatarUrl };
+    setMember(nextMember);
+    setMembers((current) => current.map((profile) => profile.id === member.id ? { ...profile, name: trimmedName, avatarUrl } : profile));
+    return { success: true };
+  };
   const signOutAdmin = async () => {
     if (supabase) await supabase.auth.signOut();
     setAdmin(null);
@@ -319,10 +419,9 @@ export function AppDataProvider({ children }) {
       }
       return { success: true };
     }
-    const valid = email.trim().toLowerCase() === "admin@gtooutreach.org" && password === "GTO-Admin-2026";
-    if (!valid) return false;
-    setAdmin({ email: "admin@gtooutreach.org", role: "admin" });
-    return { success: true };
+    // Admin sign-in requires a configured Supabase backend. There is intentionally
+    // no hardcoded credential fallback here for security.
+    return { success: false, error: "Admin sign-in requires a configured Supabase backend." };
   };
 
   const sendPasswordRecovery = async (email) => {
@@ -341,11 +440,16 @@ export function AppDataProvider({ children }) {
     return { success: true };
   };
 
-  const toggleLike = (devotionalId) => {
+  const toggleLike = async (devotionalId) => {
     if (!member) return;
     if (supabase) {
       const current = memberEngagement.liked.includes(devotionalId);
-      supabase.from("devotional_engagement").upsert({ devotional_id: devotionalId, user_id: member.id, liked: !current, completed: memberEngagement.completed.includes(devotionalId) }).then(loadRemoteData);
+      const { error } = await supabase.from("devotional_engagement").upsert({ devotional_id: devotionalId, user_id: member.id, liked: !current, completed: memberEngagement.completed.includes(devotionalId) });
+      if (error) {
+        setBackendError(error.message);
+        return;
+      }
+      await loadRemoteData();
       return;
     }
     setEngagement((current) => {
@@ -368,10 +472,15 @@ export function AppDataProvider({ children }) {
     )));
   };
 
-  const markComplete = (devotionalId) => {
+  const markComplete = async (devotionalId) => {
     if (!member || memberEngagement.completed.includes(devotionalId)) return;
     if (supabase) {
-      supabase.from("devotional_engagement").upsert({ devotional_id: devotionalId, user_id: member.id, liked: memberEngagement.liked.includes(devotionalId), completed: true }).then(loadRemoteData);
+      const { error } = await supabase.from("devotional_engagement").upsert({ devotional_id: devotionalId, user_id: member.id, liked: memberEngagement.liked.includes(devotionalId), completed: true });
+      if (error) {
+        setBackendError(error.message);
+        return;
+      }
+      await loadRemoteData();
       return;
     }
     setEngagement((current) => ({ ...current, [member.id]: { ...memberEngagement, completed: [...memberEngagement.completed, devotionalId] } }));
@@ -380,12 +489,17 @@ export function AppDataProvider({ children }) {
     )));
   };
 
-  const addComment = (devotionalId, text) => {
+  const addComment = async (devotionalId, text) => {
     const trimmedText = text.trim();
     if (!trimmedText) return;
     if (!member) return;
     if (supabase) {
-      supabase.from("devotional_comments").insert({ devotional_id: devotionalId, user_id: member.id, body: trimmedText }).then(loadRemoteData);
+      const { error } = await supabase.from("devotional_comments").insert({ devotional_id: devotionalId, user_id: member.id, body: trimmedText });
+      if (error) {
+        setBackendError(error.message);
+        return;
+      }
+      await loadRemoteData();
       return;
     }
     setEngagement((current) => ({
@@ -396,23 +510,31 @@ export function AppDataProvider({ children }) {
           ...memberEngagement.comments,
         {
           id: `comment-${Date.now()}`,
+          userId: member.id,
           devotionalId,
-          author: member?.name || "GTO member",
+          author: member?.name || "Member",
+          authorAvatar: member?.avatarUrl || null,
           text: trimmedText,
           createdAt: new Date().toISOString(),
           },
         ],
       },
     }));
+    devotionalComments.filter((item) => item.devotionalId === devotionalId && item.userId && item.userId !== member.id).forEach((item) => pushNotification(item.userId, { type: "reply", title: member.name, body: "replied in the devotional conversation.", link: `/devotional?id=${devotionalId}` }));
     setDevotionals((current) => current.map((item) => (
       item.id === devotionalId ? { ...item, comments: item.comments + 1 } : item
     )));
   };
 
-  const publishDevotional = (draft) => {
+  const publishDevotional = async (draft) => {
     if (supabase && admin) {
-      supabase.from("devotionals").insert({ title: draft.title, reference: draft.reference, scripture: draft.scripture, reflection: draft.reflection, prayer: draft.prayer, published_by: admin.id }).then(loadRemoteData);
-      return;
+      const { error } = await supabase.from("devotionals").insert({ title: draft.title, reference: draft.reference, scripture: draft.scripture, reflection: draft.reflection, prayer: draft.prayer, published_by: admin.id });
+      if (error) {
+        setBackendError(error.message);
+        return { success: false, error: error.message };
+      }
+      await loadRemoteData();
+      return { success: true };
     }
     setDevotionals((current) => [
       {
@@ -426,6 +548,35 @@ export function AppDataProvider({ children }) {
       },
       ...current,
     ]);
+    return { success: true };
+  };
+
+  const updateDevotional = async (devotionalId, changes) => {
+    if (!admin) return;
+    if (supabase) {
+      const { error } = await supabase.from("devotionals").update({ title: changes.title.trim(), reference: changes.reference.trim(), scripture: changes.scripture.trim(), reflection: changes.reflection.trim(), prayer: changes.prayer.trim() }).eq("id", devotionalId);
+      if (!error) await loadRemoteData();
+      return;
+    }
+    setDevotionals((current) => current.map((item) => item.id === devotionalId ? {
+      ...item,
+      title: changes.title.trim(),
+      reference: changes.reference.trim(),
+      scripture: changes.scripture.trim(),
+      reflection: changes.reflection.trim(),
+      prayer: changes.prayer.trim(),
+    } : item));
+  };
+
+  const deleteDevotional = async (devotionalId) => {
+    if (!admin) return;
+    if (supabase) {
+      const { error } = await supabase.from("devotionals").delete().eq("id", devotionalId);
+      if (error) throw error;
+      await loadRemoteData();
+      return;
+    }
+    setDevotionals((current) => current.filter((item) => item.id !== devotionalId));
   };
 
   const publishMediaPost = async (draft) => {
@@ -444,6 +595,7 @@ export function AppDataProvider({ children }) {
       body: draft.body.trim(),
       mediaUrl,
       publishedAt: new Date().toISOString(),
+      publishedBy: admin?.id,
     };
     if (supabase && admin) {
       const { error } = await supabase.from("media_posts").insert({ kind: post.kind, title: post.title, body: post.body, media_url: post.mediaUrl || null, published_by: admin.id });
@@ -451,20 +603,23 @@ export function AppDataProvider({ children }) {
       await loadRemoteData();
       return;
     }
-    setMediaPosts((current) => [{ ...post, id: `media-${Date.now()}`, author: admin?.email || "GTO team" }, ...current]);
+    setMediaPosts((current) => [{ ...post, id: `media-${Date.now()}`, author: "Staff" }, ...current]);
+    members.filter((profile) => profile.id !== admin?.id).forEach((profile) => pushNotification(profile.id, { type: "update", title: "New from GTO", body: post.title, link: "/media" }));
   };
 
   const addMediaComment = async (mediaPostId, text) => {
     const trimmedText = text.trim();
     if (!member || !trimmedText) return;
+    const post = mediaPosts.find((item) => item.id === mediaPostId);
     if (supabase) {
       const { error } = await supabase.from("media_comments").insert({ media_post_id: mediaPostId, user_id: member.id, body: trimmedText });
       if (!error) await loadRemoteData();
       return;
     }
+    if (post?.publishedBy) pushNotification(post.publishedBy, { type: "reply", title: member.name, body: `replied to "${post.title}".`, link: `/media#media-${mediaPostId}` });
     setMediaPosts((current) => current.map((post) => post.id === mediaPostId ? {
       ...post,
-      comments: [...(post.comments || []), { id: `media-comment-${Date.now()}`, userId: member.id, author: member.name, text: trimmedText, createdAt: new Date().toISOString() }],
+      comments: [...(post.comments || []), { id: `media-comment-${Date.now()}`, userId: member.id, author: member.name, authorAvatar: member.avatarUrl || null, text: trimmedText, createdAt: new Date().toISOString() }],
     } : post));
   };
 
@@ -491,6 +646,7 @@ export function AppDataProvider({ children }) {
       await loadRemoteData();
       return { success: true };
     }
+    if (nextLiked && post?.publishedBy) pushNotification(post.publishedBy, { type: "like", title: member.name, body: `liked "${post.title}".`, link: `/media#media-${mediaPostId}` });
     setMediaPosts((current) => current.map((item) => item.id === mediaPostId ? { ...item, likes: Math.max(0, (item.likes || 0) + (nextLiked ? 1 : -1)), likedByMember: nextLiked, likedUserIds: nextLiked ? [...(item.likedUserIds || []), member.id] : (item.likedUserIds || []).filter((id) => id !== member.id) } : item));
     return { success: true };
   };
@@ -519,18 +675,38 @@ export function AppDataProvider({ children }) {
     if (!member) return;
     const post = { kind: draft.kind, title: draft.title.trim(), body: draft.body.trim() };
     if (supabase) {
-      await supabase.from("community_posts").insert({ ...post, user_id: member.id });
+      const { error } = await supabase.from("community_posts").insert({ ...post, user_id: member.id });
+      if (error) throw error;
       await loadRemoteData();
       return;
     }
-    setCommunityPosts((current) => [{ ...post, id: `community-${Date.now()}`, userId: member.id, author: member.name, createdAt: new Date().toISOString(), supportedUserIds: [] }, ...current]);
+    setCommunityPosts((current) => [{ ...post, id: `community-${Date.now()}`, userId: member.id, author: member.name, createdAt: new Date().toISOString(), supportedUserIds: [], comments: [] }, ...current]);
+  };
+
+  const addCommunityComment = async (postId, text) => {
+    const trimmedText = text.trim();
+    if (!member || !trimmedText) return { success: false, error: "Write an encouragement first." };
+    const post = communityPosts.find((item) => item.id === postId);
+    if (supabase) {
+      const { error } = await supabase.from("community_comments").insert({ post_id: postId, user_id: member.id, body: trimmedText });
+      if (error) return { success: false, error: error.message };
+      await loadRemoteData();
+      return { success: true };
+    }
+    if (post?.userId) pushNotification(post.userId, { type: "reply", title: member.name, body: `replied to "${post.title}".`, link: `/community-wall#community-${postId}` });
+    setCommunityPosts((current) => current.map((item) => item.id === postId ? { ...item, comments: [...(item.comments || []), { id: `community-comment-${Date.now()}`, userId: member.id, author: member.name, authorAvatar: member.avatarUrl || null, text: trimmedText, createdAt: new Date().toISOString() }] } : item));
+    return { success: true };
   };
 
   const deleteCommunityPost = async (postId) => {
     const post = communityPosts.find((item) => item.id === postId);
     if (!member || (post?.userId !== member.id && admin?.role !== "admin")) return;
     if (supabase) {
-      await supabase.from("community_posts").delete().eq("id", postId);
+      const { error } = await supabase.from("community_posts").delete().eq("id", postId);
+      if (error) {
+        setBackendError(error.message);
+        return;
+      }
       await loadRemoteData();
       return;
     }
@@ -542,11 +718,22 @@ export function AppDataProvider({ children }) {
     const post = communityPosts.find((item) => item.id === postId);
     const nextSupported = !post?.supportedByMember;
     if (supabase) {
-      if (nextSupported) await supabase.from("community_support").upsert({ post_id: postId, user_id: member.id, kind });
-      else await supabase.from("community_support").delete().eq("post_id", postId).eq("user_id", member.id);
+      const result = nextSupported
+        ? await supabase.from("community_support").upsert({ post_id: postId, user_id: member.id, kind })
+        : await supabase.from("community_support").delete().eq("post_id", postId).eq("user_id", member.id);
+      if (result.error) {
+        setBackendError(result.error.message);
+        return;
+      }
       await loadRemoteData();
       return;
     }
+    if (nextSupported && post?.userId) pushNotification(post.userId, {
+      type: "prayer",
+      title: member.name,
+      body: post.kind === "prayer" ? "is praying with you." : "said Amen to your testimony.",
+      link: `/community-wall#community-${postId}`,
+    });
     setCommunityPosts((current) => current.map((item) => item.id === postId ? {
       ...item,
       supportCount: Math.max(0, (item.supportCount || 0) + (nextSupported ? 1 : -1)),
@@ -554,6 +741,26 @@ export function AppDataProvider({ children }) {
       supportedUserIds: nextSupported ? [...(item.supportedUserIds || []), member.id] : (item.supportedUserIds || []).filter((id) => id !== member.id),
     } : item));
   };
+
+  const analytics = {
+    devotionalComments: devotionalComments.length,
+    devotionalLikes: Object.values(engagement).reduce((total, activity) => total + (activity.liked || []).length, 0),
+    completedReadings: Object.values(engagement).reduce((total, activity) => total + (activity.completed || []).length, 0),
+    mediaLikes: mediaPosts.reduce((total, post) => total + (post.likedUserIds || []).length, 0),
+    mediaComments: mediaPosts.reduce((total, post) => total + (post.comments || []).length, 0),
+    communityComments: communityPosts.reduce((total, post) => total + (post.comments || []).length, 0),
+    communitySupport: communityPosts.reduce((total, post) => total + (post.supportedUserIds || []).length, 0),
+    shares: Object.values(shares).reduce((total, memberShares) => total + memberShares.length, 0),
+  };
+
+      const toggleTheme = () => {
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    setTheme(nextTheme);
+  };
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+  }, [theme]);
 
   const value = {
     member,
@@ -563,17 +770,33 @@ export function AppDataProvider({ children }) {
     mediaPosts,
     communityPosts,
     engagement: memberEngagement,
+    readingProgress: memberReadingProgress,
+    readingHistory: memberReadingHistory,
+    readingStreak,
     devotionalComments,
     memberActivity,
     memberBadges,
+    analytics,
     activityLeaderboard,
     activeMembers: activityLeaderboard.filter((profile) => profile.activity.points > 0).length,
     totalMembers: members.length,
-    backendConnected: isSupabaseConfigured,
+        backendConnected: isSupabaseConfigured,
     backendLoading,
+    backendError,
+    clearBackendError: () => setBackendError(""),
+    theme,
+    toggleTheme,
     passwordRecovery,
     joinCommunity,
     leaveCommunity,
+    signOutMember,
+    updateMemberProfile,
+    memberNotifications,
+    unreadNotifications,
+    recordShare,
+    updateReadingProgress,
+    markNotificationRead,
+    markAllNotificationsRead,
     signInMember,
     signInAdmin,
     sendPasswordRecovery,
@@ -583,6 +806,8 @@ export function AppDataProvider({ children }) {
     markComplete,
     addComment,
     publishDevotional,
+    updateDevotional,
+    deleteDevotional,
     publishMediaPost,
     addMediaComment,
     deleteMediaComment,
@@ -590,6 +815,7 @@ export function AppDataProvider({ children }) {
     deleteMediaPost,
     updateMediaPost,
     createCommunityPost,
+    addCommunityComment,
     deleteCommunityPost,
     toggleCommunitySupport,
     mediaUpdateNotice,

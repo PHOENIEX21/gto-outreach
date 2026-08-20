@@ -3,7 +3,7 @@ import { useAppData } from "../data/useAppData";
 import { MediaPost } from "./Media";
 
 function Announcements() {
-  const { mediaPosts, member, addMediaComment, toggleMediaLike, backendLoading } = useAppData();
+  const { mediaPosts, member, addMediaComment, toggleMediaLike, recordShare, backendLoading } = useAppData();
   const announcements = mediaPosts.filter((post) => post.kind === "announcement");
 
   return (
@@ -12,6 +12,7 @@ function Announcements() {
         <p className="eyebrow">GTO ANNOUNCEMENTS</p>
         <h1>Stay in the <span>know.</span></h1>
         <p>Important updates, gatherings and news from the Glad Tidings Outreach family.</p>
+        {member && <Link to="/member" className="member-return-link">← Back to member space</Link>}
       </section>
 
       {backendLoading && <p className="content-loading" role="status">Loading the latest announcements...</p>}
@@ -32,7 +33,7 @@ function Announcements() {
                 <strong>{new Date(announcement.publishedAt).getDate()}</strong>
               </div>
               <div className="announcement-copy">
-                <MediaPost post={announcement} member={member} addMediaComment={addMediaComment} toggleMediaLike={toggleMediaLike} />
+                <MediaPost post={announcement} member={member} addMediaComment={addMediaComment} toggleMediaLike={toggleMediaLike} recordShare={recordShare} />
               </div>
             </article>
           ))

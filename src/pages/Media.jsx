@@ -1,21 +1,28 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAppData } from "../data/useAppData";
 
-export function MediaPost({ post, member, addMediaComment, toggleMediaLike }) {
+export function MediaPost({ post, member, addMediaComment, toggleMediaLike, recordShare }) {
   const [comment, setComment] = useState("");
   const [shareLabel, setShareLabel] = useState("Share");
   const [likeError, setLikeError] = useState("");
+  const [shareError, setShareError] = useState("");
   const comments = post.comments || [];
 
   const sharePost = async () => {
     const postUrl = `${window.location.origin}${window.location.pathname}#media-${post.id}`;
     const shareData = { title: post.title, text: post.body, url: postUrl };
-    if (navigator.share) await navigator.share(shareData);
-    else if (navigator.clipboard) {
-      await navigator.clipboard.writeText(postUrl);
-      setShareLabel("Copied");
-      window.setTimeout(() => setShareLabel("Share"), 1800);
+    try {
+      if (navigator.share) await navigator.share(shareData);
+      else if (navigator.clipboard) await navigator.clipboard.writeText(postUrl);
+      const result = await recordShare("media", post.id, post.title, postUrl);
+      if (!result.success) setShareError(result.error);
+      else {
+        setShareLabel(navigator.share ? "Shared" : "Copied");
+        window.setTimeout(() => setShareLabel("Share"), 1800);
+      }
+    } catch (error) {
+      if (error.name !== "AbortError") setShareError(error.message || "Unable to share this post.");
     }
   };
 
@@ -47,8 +54,9 @@ export function MediaPost({ post, member, addMediaComment, toggleMediaLike }) {
         <button type="button" className={post.likedByMember ? "media-like-button active" : "media-like-button"} onClick={handleLike}>{member ? `${post.likedByMember ? "♥ Saved" : "♡ Like"} · ${post.likes || 0}` : "Join GTO to like"}</button>
         {likeError && <small className="media-action-error">{likeError}</small>}
         <button type="button" className="media-share-button" onClick={sharePost}>{shareLabel} <span aria-hidden="true">↗</span></button>
+        {shareError && <small className="media-action-error" role="alert">{shareError}</small>}
         <div className="media-post-comments">
-          {comments.length > 0 && <div className="media-comment-list">{comments.slice(0, 3).map((item) => <p key={item.id}><strong>{item.author}</strong>{item.text}</p>)}</div>}
+          {comments.length > 0 && <div className="media-comment-list">{comments.slice(0, 3).map((item) => <p key={item.id}><span className="comment-author"><span className="comment-avatar">{item.authorAvatar ? <img src={item.authorAvatar} alt="" /> : item.author.slice(0, 1).toUpperCase()}</span><strong>{item.author}</strong></span><span>{item.text}</span></p>)}</div>}
           {member ? <form onSubmit={submitComment}><input value={comment} onChange={(event) => setComment(event.target.value)} placeholder="Say something encouraging..." aria-label={`Comment on ${post.title}`} /><button type="submit" className="media-comment-button">Post</button></form> : <p className="media-sign-in-prompt"><Link to="/join">Join GTO</Link> to comment on this post.</p>}
         </div>
       </div>
@@ -57,20 +65,12 @@ export function MediaPost({ post, member, addMediaComment, toggleMediaLike }) {
 }
 
 function Media() {
-  const { mediaPosts, member, addMediaComment, toggleMediaLike, mediaUpdateNotice, clearMediaUpdateNotice, backendLoading } = useAppData();
+  const { mediaPosts, member, addMediaComment, toggleMediaLike, recordShare, mediaUpdateNotice, clearMediaUpdateNotice, backendLoading } = useAppData();
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState("all");
+  const [visibleCount, setVisibleCount] = useState(8);
   const visiblePosts = mediaPosts.filter((post) => (kind === "all" || post.kind === kind) && `${post.title} ${post.body}`.toLowerCase().includes(query.toLowerCase().trim()));
-  useEffect(() => {
-    const script = document.createElement("script");
-    script.src = "https://www.tiktok.com/embed.js";
-    script.async = true;
-    document.body.appendChild(script);
 
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
   return (
     <main className="media-page">
       <section className="media-hero">
@@ -85,6 +85,7 @@ function Media() {
           Messages, worship, teachings and resources designed
           to strengthen your faith and help you grow in Christ.
         </p>
+        {member && <Link to="/member" className="member-return-link">← Back to member space</Link>}
       </section>
 
       {backendLoading && <p className="content-loading" role="status">Loading the latest from GTO...</p>}
@@ -171,7 +172,7 @@ function Media() {
       </section>
 
       {mediaUpdateNotice && <button type="button" className="media-update-notice" onClick={clearMediaUpdateNotice}>{mediaUpdateNotice} <span aria-hidden="true">×</span></button>}
-      {mediaPosts.length > 0 && <section className="media-posts"><div className="media-posts-heading"><p className="eyebrow">LATEST FROM GTO</p><h2>Stay connected.</h2><div className="media-filters"><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search GTO media" aria-label="Search GTO media" /><select value={kind} onChange={(event) => setKind(event.target.value)} aria-label="Filter media by type"><option value="all">All posts</option><option value="announcement">Announcements</option><option value="video">Videos</option><option value="image">Images</option></select></div></div><div className="media-post-grid">{visiblePosts.length > 0 ? visiblePosts.map((post) => <MediaPost key={post.id} post={post} member={member} addMediaComment={addMediaComment} toggleMediaLike={toggleMediaLike} />) : <p className="media-filter-empty">No posts match that search.</p>}</div></section>}
+      {mediaPosts.length > 0 && <section className="media-posts"><div className="media-posts-heading"><p className="eyebrow">LATEST FROM GTO</p><h2>Stay connected.</h2><div className="media-filters"><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search GTO media" aria-label="Search GTO media" /><select value={kind} onChange={(event) => setKind(event.target.value)} aria-label="Filter media by type"><option value="all">All posts</option><option value="announcement">Announcements</option><option value="video">Videos</option><option value="image">Images</option></select></div></div><div className="media-post-grid">{visiblePosts.length > 0 ? visiblePosts.slice(0, visibleCount).map((post) => <MediaPost key={post.id} post={post} member={member} addMediaComment={addMediaComment} toggleMediaLike={toggleMediaLike} recordShare={recordShare} />) : <p className="media-filter-empty">No posts match that search.</p>}</div>{visiblePosts.length > visibleCount && <button type="button" className="wall-load-more member-primary" onClick={() => setVisibleCount((count) => count + 8)}>Load more <span aria-hidden="true">↓</span></button>}</section>}
 
 <section id="messages" className="media-content-section">
   <p className="media-card-label">MESSAGES</p>

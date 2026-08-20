@@ -1,0 +1,123 @@
+/* Keep phone-specific layout rules after the shared component styles. */
+@media (max-width: 700px) {
+  .gto-header {
+    min-height: 70px;
+  }
+
+  .landing-header .brand-link {
+    min-width: 0;
+  }
+
+  .landing-header .brand h1 {
+    font-size: 16px;
+  }
+
+  .landing-header .brand span {
+    font-size: 10px;
+  }
+
+  .landing-header .dashboard-logo {
+    width: 38px;
+    height: 38px;
+  }
+
+    .desktop-nav,
+  .header-button,
+  .theme-toggle {
+    display: none;
+  }
+
+  .member-header-tools,
+  .member-header-link {
+    display: flex;
+  }
+
+  .menu-button {
+    display: flex !important;
+    flex: 0 0 44px;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+  }
+
+  .landing-hero {
+    min-height: 0;
+    padding: 58px 20px 40px;
+  }
+
+  .landing-hero h1 {
+    font-size: clamp(46px, 14vw, 68px);
+  }
+
+  .landing-actions {
+    align-items: stretch;
+    flex-direction: column;
+    max-width: 320px;
+    margin-right: auto;
+    margin-left: auto;
+  }
+
+  .landing-primary,
+  .landing-secondary {
+    width: 100%;
+  }
+
+  .landing-stats {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .landing-stats strong {
+    font-size: 21px;
+  }
+
+  .landing-stats span {
+    font-size: 9px;
+  }
+
+  .purpose-section {
+    grid-template-columns: 1fr;
+    gap: 38px;
+    padding: 70px 20px;
+  }
+
+  .purpose-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .media-cta,
+  .media-content-section {
+    width: auto;
+    margin-right: 20px;
+    margin-left: 20px;
+    padding: 42px 22px;
+    border-radius: 22px;
+  }
+
+  .community-wall-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .wall-form {
+    position: static;
+  }
+
+  .announcement-item {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Final phone overrides, kept after shared page styles. */
+@media (max-width: 600px) {
+  .activity-row { grid-template-columns: 34px minmax(0, 1fr); align-items: start; gap: 10px; }
+  .activity-row > div { min-width: 0; }
+  .activity-row strong { overflow-wrap: anywhere; line-height: 1.16; }
+  .activity-row b { grid-column: 2; margin-top: -4px; }
+  .bottom-nav { height: calc(64px + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); gap: 0; justify-content: space-around; backdrop-filter: blur(14px); box-shadow: 0 -8px 24px rgba(11, 42, 31, 0.08); }
+  .bottom-nav a { display: grid; min-width: 62px; place-items: center; gap: 3px; padding: 7px 4px; color: #687067; font-size: 10px; transition: color .2s ease, transform .2s ease; }
+  .bottom-nav a span { font-size: 19px; line-height: 1; }
+  .bottom-nav a.active { color: #1d5b3a; transform: translateY(-2px); }
+  .bottom-nav a.active::after { width: 18px; height: 3px; border-radius: 99px; content: ""; background: #e8b84b; }
+}
+

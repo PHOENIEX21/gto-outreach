@@ -42,7 +42,7 @@ function Community() {
             and encourage one another in your walk with Christ.
           </p>
 
-          <a href="/join">Join the conversation →</a>
+          <Link to="/join">Join the conversation →</Link>
         </div>
 
         <div className="community-card" id="mission">
@@ -55,7 +55,7 @@ function Community() {
             beyond the walls and into our communities.
           </p>
 
-          <a href="/announcements">See GTO updates →</a>
+          <Link to="/announcements">See GTO updates →</Link>
         </div>
       </section>
 

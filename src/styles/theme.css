@@ -1,0 +1,158 @@
+:root[data-theme="dark"] .member-journey-panel {
+  background: var(--color-surface);
+  border-color: var(--color-border-strong);
+}
+
+:root[data-theme="dark"] .member-journey-item {
+  border-color: var(--color-border-strong);
+}
+
+:root[data-theme="dark"] .member-reading-item {
+  background: var(--color-bg-soft);
+}
+/* Dark-mode surfaces for legacy page styles that still use light literals. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+:root[data-theme="dark"] body,
+:root[data-theme="dark"] .page,
+:root[data-theme="dark"] .devotional-page,
+:root[data-theme="dark"] .community-page,
+:root[data-theme="dark"] .media-page,
+:root[data-theme="dark"] .join-page,
+:root[data-theme="dark"] .member-page,
+:root[data-theme="dark"] .admin-page {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+:root[data-theme="dark"] .desktop-nav a,
+:root[data-theme="dark"] .devotional-intro,
+:root[data-theme="dark"] .community-hero > p,
+:root[data-theme="dark"] .community-message > p:last-child,
+:root[data-theme="dark"] .devotional-body p,
+:root[data-theme="dark"] .devotional-body .prayer-box p,
+:root[data-theme="dark"] .devotional-body .reflection-box p,
+:root[data-theme="dark"] .devotional-text,
+:root[data-theme="dark"] .text-button,
+:root[data-theme="dark"] .admin-link,
+:root[data-theme="dark"] .join-form small {
+  color: var(--color-text-soft);
+}
+
+:root[data-theme="dark"] .page > h1,
+:root[data-theme="dark"] .devotional-hero h1,
+:root[data-theme="dark"] .daily-devotional h2,
+:root[data-theme="dark"] .devotional-body h3,
+:root[data-theme="dark"] .community-hero h1,
+:root[data-theme="dark"] .community-message h2,
+:root[data-theme="dark"] .join-intro h1,
+:root[data-theme="dark"] .member-page h1,
+:root[data-theme="dark"] .admin-page h1,
+:root[data-theme="dark"] .form-heading h2,
+:root[data-theme="dark"] .member-involvement h2,
+:root[data-theme="dark"] .member-comments h2,
+:root[data-theme="dark"] .admin-section-heading h2,
+:root[data-theme="dark"] .recent-activity-list strong {
+  color: var(--color-ink);
+}
+
+:root[data-theme="dark"] .daily-devotional,
+:root[data-theme="dark"] .community-card,
+:root[data-theme="dark"] .join-form,
+:root[data-theme="dark"] .member-profile-panel,
+:root[data-theme="dark"] .member-welcome-panel,
+:root[data-theme="dark"] .member-notifications-panel,
+:root[data-theme="dark"] .admin-form,
+:root[data-theme="dark"] .admin-recent-activity,
+:root[data-theme="dark"] .dashboard-cards div,
+:root[data-theme="dark"] .media-card,
+:root[data-theme="dark"] .media-feature,
+:root[data-theme="dark"] .community-wall-card,
+:root[data-theme="dark"] .member-card,
+:root[data-theme="dark"] .feature-card {
+  background: var(--color-surface);
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.22);
+}
+
+:root[data-theme="dark"] .recent-activity-list article,
+:root[data-theme="dark"] .prayer-box,
+:root[data-theme="dark"] .reflection-box {
+  background: var(--color-bg-soft);
+}
+
+:root[data-theme="dark"] .join-form input,
+:root[data-theme="dark"] .member-profile-panel input,
+:root[data-theme="dark"] .admin-form input,
+:root[data-theme="dark"] .admin-form textarea,
+:root[data-theme="dark"] .member-comments textarea,
+:root[data-theme="dark"] .mobile-menu,
+:root[data-theme="dark"] .menu-button {
+  background: var(--color-surface);
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+}
+
+:root[data-theme="dark"] .member-notification {
+  background: var(--color-bg-soft);
+}
+
+:root[data-theme="dark"] .member-notification.unread {
+  background: rgba(232, 184, 75, 0.12);
+}
+
+:root[data-theme="dark"] .member-reading-panel {
+  background: var(--color-surface);
+  border-color: var(--color-border-strong);
+}
+
+:root[data-theme="dark"] .member-reading-item {
+  background: var(--color-bg-soft);
+}
+
+:root[data-theme="dark"] .landing-word {
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+:root[data-theme="dark"] .landing-word-copy h2,
+:root[data-theme="dark"] .landing-word-link {
+  color: var(--color-ink);
+}
+
+:root[data-theme="dark"] .member-welcome-panel h2,
+:root[data-theme="dark"] .member-notifications-panel h2,
+:root[data-theme="dark"] .member-reading-panel h2,
+:root[data-theme="dark"] .member-journey-panel h2,
+:root[data-theme="dark"] .member-notification strong {
+  color: var(--color-ink);
+}
+
+:root[data-theme="dark"] .daily-devotional .scripture,
+:root[data-theme="dark"] .community-card h2,
+:root[data-theme="dark"] .form-heading p {
+  color: var(--color-text);
+}
+
+:root[data-theme="dark"] .devotional-divider,
+:root[data-theme="dark"] .returning-member {
+  border-color: var(--color-border-strong);
+}
+
+:root[data-theme="dark"] .mobile-menu a,
+:root[data-theme="dark"] .member-header-link {
+  color: var(--color-text);
+}
+
+:root[data-theme="dark"] .mobile-theme-toggle {
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+}
+
+:root[data-theme="dark"] .theme-toggle:hover,
+:root[data-theme="dark"] .menu-button:hover {
+  background: var(--color-bg-soft);
+}

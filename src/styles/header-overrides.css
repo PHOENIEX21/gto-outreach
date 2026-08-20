@@ -1,0 +1,242 @@
+/* FINAL HEADER OVERRIDE */
+
+.gto-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+
+  display: flex;
+  align-items: center;
+  gap: 28px;
+
+  min-height: 78px;
+  padding: 12px 6%;
+
+  background: rgba(255, 255, 255, 0.97);
+  border-bottom: 1px solid #e8e5dc;
+
+  box-shadow: 0 5px 22px rgba(0, 0, 0, 0.06);
+}
+
+.brand-link {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
+.brand {
+  flex: 0 0 auto;
+  margin-left: 0;
+}
+
+.logo-mark {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+}
+
+.desktop-nav {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+
+  margin-left: auto;
+  margin-right: 35px;
+}
+
+.desktop-nav a {
+  white-space: nowrap;
+}
+
+.header-button {
+  flex-shrink: 0;
+  white-space: nowrap;
+  padding: 12px 22px;
+}
+
+.landing-header {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 1fr auto;
+  gap: 28px;
+  align-items: center;
+  padding-right: 28px;
+  padding-left: 28px;
+  background: var(--color-ivory, #f7f2e4);
+  border-bottom-color: rgba(11, 42, 31, 0.14);
+}
+
+.landing-header .brand-link {
+  justify-self: start;
+  min-width: 0;
+}
+
+.landing-header .dashboard-logo {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border: 2px solid #e8b84b;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.landing-header .brand {
+  min-width: 0;
+  margin-left: 0;
+}
+
+.landing-header .brand h1 {
+  overflow: hidden;
+  color: #0b2a1f;
+  font-family: Fraunces, Georgia, serif;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.05;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.landing-header .brand span {
+  display: block;
+  margin-top: 3px;
+  color: #5c4a2a;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.landing-header .desktop-nav {
+  margin: 0;
+}
+
+.landing-header .desktop-nav a {
+  color: #0b2a1f;
+  font-weight: 600;
+}
+
+.landing-header .desktop-nav .staff-nav-link {
+  color: #b07c22;
+  font-size: 12px;
+}
+
+.landing-header .desktop-nav .staff-nav-link:hover {
+  color: #dd6e45;
+}
+
+.landing-header .header-button {
+  justify-self: end;
+  color: #3a2a08;
+  background: #e8b84b;
+}
+
+.member-header-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.member-header-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #0b2a1f;
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.header-member-avatar {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(232, 184, 75, 0.7);
+  border-radius: 50%;
+  color: #fffdf7;
+  font-size: 11px;
+  background: #1d5b3a;
+}
+
+.header-member-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.header-signout {
+  min-height: 34px;
+  padding: 7px 11px;
+  border: 1px solid rgba(201, 107, 66, 0.4);
+  border-radius: 7px;
+  color: #9f3a28;
+  font-size: 11px;
+  font-weight: 800;
+  background: #fff8f4;
+  cursor: pointer;
+}
+
+.header-signout:hover {
+  color: #fffdf7;
+  background: #c96b42;
+}
+
+@media (max-width: 800px) {
+  .gto-header {
+    padding: 12px 5%;
+  }
+
+  .landing-header {
+    display: flex;
+    gap: 0;
+    padding-right: 5%;
+    padding-left: 5%;
+  }
+
+  .landing-header .brand-link {
+    flex: 1;
+  }
+
+      .desktop-nav,
+  .header-button,
+  .landing-header .theme-toggle {
+    display: none;
+  }
+
+      .member-header-tools {
+        display: flex;
+        gap: 6px;
+        margin-left: auto;
+        margin-right: 6px;
+      }
+
+      .member-header-link {
+        max-width: 118px;
+        overflow: hidden;
+        gap: 5px;
+        font-size: 10px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .header-member-avatar {
+        width: 28px;
+        height: 28px;
+        flex: 0 0 28px;
+      }
+
+      .header-signout {
+        min-height: 32px;
+        padding: 6px 8px;
+        font-size: 10px;
+      }
+
+  .gto-header .menu-button {
+    display: flex !important;
+  }
+}
+

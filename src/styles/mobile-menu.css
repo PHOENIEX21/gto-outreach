@@ -1,0 +1,226 @@
+/* MOBILE MENU */
+
+.mobile-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: #ffffff;
+  padding: 20px 7%;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.08);
+}
+
+.mobile-menu a {
+  display: block;
+  padding: 15px 10px;
+  color: #173d2a;
+  text-decoration: none;
+  font-weight: 700;
+  border-bottom: 1px solid #eeeeee;
+}
+
+.mobile-theme-toggle {
+  width: 100%;
+  padding: 16px 20px;
+  border: 0;
+  border-top: 1px solid #eeeeee;
+  color: #173d2a;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: left;
+  background: transparent;
+  cursor: pointer;
+}
+
+.mobile-signout {
+  width: 100%;
+  padding: 12px 0;
+  border: 0;
+  border-top: 1px solid rgba(11, 42, 31, 0.1);
+  color: #9f3a28;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: left;
+  background: transparent;
+  cursor: pointer;
+}
+
+.mobile-menu a:last-child {
+  border-bottom: none;
+}
+
+.mobile-menu a:hover {
+  color: #1d5b3a;
+}
+
+@media (max-width: 700px) {
+  .desktop-nav,
+  .header-button {
+    display: none;
+  }
+
+  .menu-button {
+    display: block;
+  }
+
+  .gto-header {
+    position: relative;
+  }
+}
+
+@media (max-width: 700px) {
+  .desktop-nav {
+    display: none;
+  }
+
+  .header-button {
+    display: none;
+  }
+
+  .menu-button {
+  display: none;
+  width: 50px;
+  height: 50px;
+  border: 2px solid #173d2a;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #173d2a;
+  font-size: 28px;
+  cursor: pointer;
+  position: relative;
+  z-index: 9999;
+  pointer-events: auto;
+}
+  .gto-header {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+  }
+
+  .mobile-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 999;
+    background: #ffffff;
+    padding: 15px 6%;
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.08);
+  }
+}
+
+@media screen and (max-width: 700px) {
+  .menu-button {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto !important;
+  }
+}
+
+
+
+.hero {
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+}
+
+.hero-visual {
+  position: relative;
+  z-index: 1;
+}
+
+.hero-image {
+  transition: transform 0.5s ease;
+}
+
+.hero-image:hover {
+  transform: scale(1.02);
+}
+
+.hero-quote {
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(6px);
+}
+
+.primary-button,
+.secondary-button,
+.header-button {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.primary-button:hover,
+.secondary-button:hover,
+.header-button:hover {
+  transform: translateY(-3px);
+}
+
+.gto-logo {
+  width: 62px;
+  height: 62px;
+  object-fit: cover;
+  border-radius: 14px;
+  display: block;
+}
+
+.media-content-section {
+  max-width: 1000px;
+  margin: 100px auto;
+  padding: 60px 40px;
+  background: #ffffff;
+  border-radius: 28px;
+  border: 1px solid #e7e4da;
+}
+
+.media-content-section h2 {
+  margin: 15px 0;
+  color: #173d2a;
+  font-size: clamp(36px, 5vw, 58px);
+}
+
+.media-content-section p:last-child {
+  max-width: 600px;
+  color: #666;
+  line-height: 1.8;
+}
+
+#messages,
+#worship,
+#resources {
+  scroll-margin-top: 100px;
+}
+
+.media-message-placeholder {
+  margin-top: 35px;
+  padding: 35px;
+  background: #f7f5ef;
+  border: 1px solid #e7e4da;
+  border-radius: 20px;
+}
+
+.media-message-placeholder span {
+  display: block;
+  font-size: 38px;
+  margin-bottom: 15px;
+}
+
+.media-message-placeholder h3 {
+  margin-bottom: 10px;
+  color: #173d2a;
+  font-size: 24px;
+}
+
+.media-message-placeholder p {
+  color: #666;
+  line-height: 1.7;
+}
+

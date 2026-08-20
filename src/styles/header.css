@@ -1,0 +1,100 @@
+/* HEADER */
+
+.gto-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+
+  display: flex;
+  align-items: center;
+
+  min-height: 76px;
+  padding: 12px 6%;
+
+  background: var(--color-header-bg, rgba(255, 255, 255, 0.96));
+  border-bottom: 1px solid var(--color-header-border, rgba(23, 61, 42, 0.08));
+
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+
+  box-shadow: 0 4px 20px rgba(23, 61, 42, 0.05);
+}
+
+/* GTO LOGO */
+
+.logo-mark {
+  width: 48px;
+  height: 48px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  background: #173d2a;
+  color: #e7c86e;
+
+  border: 1px solid rgba(231, 200, 110, 0.35);
+  border-radius: 14px;
+
+  font-size: 22px;
+  font-weight: 800;
+
+  box-shadow: 0 8px 20px rgba(23, 61, 42, 0.14);
+}
+
+/* BRAND */
+
+.brand {
+  flex: 1;
+  margin-left: 14px;
+}
+
+.brand h1,
+.brand h2,
+.brand p {
+  margin: 0;
+}
+
+.member-alert-badge {
+  display: inline-grid;
+  min-width: 18px;
+  height: 18px;
+  margin-left: 6px;
+  padding: 0 4px;
+  place-items: center;
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 10px;
+  background: #c96b42;
+}
+
+/* MOBILE MENU BUTTON */
+
+.menu-button {
+  display: none;
+
+  width: 46px;
+  height: 46px;
+
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid rgba(23, 61, 42, 0.15);
+  border-radius: 12px;
+
+  background: #ffffff;
+  color: #173d2a;
+
+  font-size: 25px;
+  cursor: pointer;
+
+  transition: 0.2s ease;
+}
+
+.menu-button:hover {
+  background: #f7f5ef;
+  transform: translateY(-1px);
+}
+

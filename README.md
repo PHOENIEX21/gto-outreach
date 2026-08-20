@@ -31,6 +31,31 @@ the Supabase Dashboard:
 
 For an existing project, run `supabase/media_posts.sql` once to enable admin publishing of announcements, uploaded videos/images, and hosted media URLs on the Media page.
 
+Run `supabase/devotional_admin.sql` once so admins can edit and remove devotionals from the admin Content Library.
+
+Run `supabase/devotional_progress.sql` once to sync member devotional reading
+progress across devices. It is safe to run more than once.
+
+Run `supabase/profile_media.sql` once for member profile photos. It adds the
+`avatar_url` profile field and a public avatar bucket where each signed-in
+member can upload or replace only their own avatar.
+
+Run `supabase/engagement_notifications.sql` once for share points and website
+notifications. Notifications appear in the member dashboard; no email delivery
+is used by this feature. Run the base schema and content migrations first when
+setting up a new project; this file safely skips triggers for tables that have
+not been created yet. Rerun this file after pulling notification updates so the
+database functions use the replying member's display name.
+
+Run `supabase/community_comments.sql` once for replies on prayer requests and
+testimonies. It adds member-only posting with public reading and owner/admin
+moderation policies.
+
+If Supabase reports that `public.community_support` is missing, run
+`supabase/community_support.sql` once, then reload the app. For a new project,
+run `supabase/media_posts.sql` before this repair and before
+`supabase/engagement_notifications.sql`.
+
 Never place the Supabase service-role key in this frontend. Only the anon key belongs in `.env.local`; row-level security protects the data.
 
 This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
